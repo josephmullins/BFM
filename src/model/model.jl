@@ -1,4 +1,5 @@
 include("transitions.jl")
+
 #-- define the parameters that won't change through the problem
 function FixedParams(;
     β = 0.95,  # Discounting factor
@@ -26,8 +27,11 @@ function FixedParams(;
     return (;β,b,A_W,N_t,A_d,N_d,N_κ,κ_W,κ_W_grid,A_bar,A,A_grid,N_a,N_ϵ,π_H,N_ω,ω_grid,τ_R,T_f,τgrid,N_τ,N_c)
 end
 
+# - return a named tuple of parameters with default values
 function Params(F)
     (;N_ϵ, N_ω, A, A_bar) = F
+    ρ_ϵ = 0.9
+    σ_η = 1.
     Λ,Π = rouwenhorst(N_ϵ ,σ_η, ρ_ϵ)
     return (;
     α_C = 1. ,    # Consumption coefficient
