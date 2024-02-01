@@ -1,3 +1,4 @@
+using LinearAlgebra, Interpolations, SparseArrays
 include("transitions.jl")
 
 #-- define the parameters that won't change through the problem
@@ -33,25 +34,22 @@ function Params(F)
     ρ_ϵ = 0.9
     σ_η = 1.
     Λ,Π = rouwenhorst(N_ϵ ,σ_η, ρ_ϵ)
+    π_ω = 0.8
+    Π_ω = transmat_ω(π_ω,N_ω)
     return (;
     α_C = 1. ,    # Consumption coefficient
     α_ℓ = 0.5 ,   # Leisure coefficient
-    α_kW = 1.5 ,  # Wife coefficient on child skill (don't need this coefficient right now`)
-    α_kH = 1.0  , # Husband coefficient on child skill (don't need this coefficient right now)
-    α_kWH = α_kW/α_kH ,
     γ_YW = fill(0.5,2,3), # Coefficients in wife's income process, Y_Wt = γ_YW[1] + γ_YW[2]*A_W + γ_YW[3]*κ_W
     σ_L = 1.          ,  # Scale parameter of wife labor shock, ϵ_L ∼ Gumbel(0,σ_L)
     γ_YH = fill(0.5,2,2) , # Coefficients in husband's income process, Y_Ht = γ_YH[1] + γ_YH[2]*A_H + ϵ
     # Husband income shock ϵ_t+1 = ρ_ϵ*ϵ_t + η_t+1, η ∼ N(0,σ_η^2)
     ρ_ϵ = 0.9 ,
     σ_η = 1. ,
-    γ_τW = fill(0.5,2), # Coefficients used to approximate Γ_τWa = γ_τW[1] + γ_τW[2]*a
-    γ_τH = fill(0.5,2), # Coefficients used to approximate Γ_τHa = γ_τH[1] + γ_τH[2]*a
-    αΓ_τWa = α_kW.*(γ_τW[1] .+ γ_τW[2].*A) ,
-    αΓ_τHa = α_kH.*(γ_τH[1] .+ γ_τH[2].*A) ,
+    αΓ_τWa = zeros(A_bar) ,
+    αΓ_τHa = zeros(A_bar) ,
     α_ω = [1., 1.5] ,  # Coefficients in marriage utility, α_ω[1] + α_ω[2]*ω
     σ_ω = 1.2 ,    # Scale parameter of marriage shock, ϵ_ω ∼ Gumbel(0,σ_ω)
-    π_ω = 0.3 ,    # Probability of staying in the same marriage quality
+    π_ω = π_ω ,    # Probability of staying in the same marriage quality
 
     # Residual terms coming from child skill production coefficients: ν_0 + ν_1 * ω
     α_νH0 = fill(0.3,2) ,  # Assume α_kH * ν_0 = α_νH0[1] + α_νH0[2]*a & α_kS * ν_0 = (α_kW/α_kH) * (α_νH0[1] + α_νH0[2]*a)
@@ -66,12 +64,12 @@ function Params(F)
     σ_F = 2.    ,  # Scale parameter of the fertility shock, ϵ_F ∼ Gumbel(0,σ_F)
     Λ_ϵ = Λ, 
     Π_ϵ = Π, 
-    Π_ω = transmat_ω(π_ω, N_ω)
+    Π_ω = Π_ω
     )
 end
 # -- set up storage for value functions
 function values(F);
-    (;N_t,N_κ,N_ϵ,N_d,N_a) = F
+    (;N_t,N_κ,N_ϵ,N_d,N_a,N_ω,T_f) = F
     return (;
     # pre-allocated value function arrays
     # Stage 5: education group x ...

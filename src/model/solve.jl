@@ -21,7 +21,7 @@ function iterateW5!(mod,t)
     (;VW5,vd5) = values
     (; σ_L) = θ
     (;A_W,κ_W_grid,β) = F
-    @views itp = interpolate(mod.VW5[:,:,t+1], (NoInterp(),BSpline(Cubic(Line(OnGrid())))))
+    @views itp = interpolate(VW5[:,:,t+1], (NoInterp(),BSpline(Cubic(Line(OnGrid())))))
     itp = Interpolations.scale(itp,1:2,κ_W_grid[t+1])
     etp = extrapolate(itp,Interpolations.Flat())
     AW = A_W[t]
@@ -49,15 +49,17 @@ function iterateH5!(mod,t)
         ϵH = Λ_ϵ[ϵi]
         AH = AW + A_d[di]
         U = IUH5(θ,eH,AH,ϵH)
-        @views VH5[eH,t,di,ϵi] = U + β*dot(VH5[eH,t+1,di,:],Π_ϵ[ϵi,:])
+        @views VH5[eH,di,ϵi,t] = U + β*dot(VH5[eH,di,:,t],Π_ϵ[ϵi,:])
     end
 end
 
 # ------ Stage 4 ----- #
 function solve4!(mod)
-    for s = 0:N_t-1 # current time index: N_t - s
-        iterateW4!(mod,N_t-s)
-        iterateH4!(mod,N_t-s)
+    (;F) = mod
+    (;N_t) = F
+    for t in reverse(1:N_t) # current time index: N_t - s
+        iterateW4!(mod,t)
+        iterateH4!(mod,t)
     end
 end
 function iterateW4!(mod,t)
@@ -88,7 +90,7 @@ function iterateW4!(mod,t)
             v0 = U0
             v1 = U1
             v2 = U2
-            for ϵii in axes(Π,2)
+            for ϵii in axes(Π_ϵ,2)
                 v0 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ,AK+1)
                 v1 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+0.5,AK+1)
                 v2 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+1,AK+1)
@@ -115,7 +117,7 @@ function iterateH4!(mod,t)
     itp = Interpolations.scale(itp, 1:2,1:2,1:N_d, 1:N_ϵ, κ_W_grid[t+1], A_grid)
     etp = extrapolate(itp,Interpolations.Flat())
     AW = A_W[t]
-    for ai in axes(VW4,6), κi in axes(VW4,5), ϵi in axes(VW4,4), di in axes(VW4,3),eH in axes(VW4,2), eW in axes(VW4,1)
+    for ai in axes(VH4,6), κi in axes(VH4,5), ϵi in axes(VH4,4), di in axes(VH4,3),eH in axes(VH4,2), eW in axes(VH4,1)
         AH = AW + A_d[di]
         ϵH = Λ_ϵ[ϵi]
         AK = Int(A_grid[ai])
@@ -137,7 +139,7 @@ function iterateH4!(mod,t)
             v2 = U2 + cv
         end
         @views p1, p2 = work_probs(vd4[:,eW,eH,di,ϵi,κi,ai,t])
-        mod.VH4[eW,eH,di,ϵi,κi,ai,t] = (1-p1-p2)*v0 + p1*v1 + p2*v2
+        VH4[eW,eH,di,ϵi,κi,ai,t] = (1-p1-p2)*v0 + p1*v1 + p2*v2
     end
 end
 
