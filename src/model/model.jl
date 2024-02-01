@@ -86,13 +86,13 @@ function values(F);
     vdL3  = zeros(2,2,2,2, N_d, N_ϵ, N_κ, N_ω, N_t),
     vdWD3 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, N_t),
     vdHD3 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, N_t),
-    # Stage 2: custody x divorce law (mutual/unilateral) x education group W x education group H ...
+    # Stage 2: divorce law (mutual/unilateral) x education group W x education group H ...
     VW2  = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_ω, N_t+1),
     VH2  = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_ω, N_t+1),
     vdL2 = zeros(2,2,2,2, N_d, N_ϵ, N_κ, N_a, N_ω, N_t),
     vdWD2 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_ω, N_t),
     vdHD2 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_ω, N_t),
-    # Stage 1: custody x divorce law (mutual/unilateral) x education group W x education group H ...
+    # Stage 1: divorce law (mutual/unilateral) x education group W x education group H ...
     VW1   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f),
     VH1   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f),
     vdL1  = zeros(2,2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
@@ -106,4 +106,5 @@ function values(F);
 end
 
 include("utility.jl")
+include("interpolate.jl")
 include("solve.jl")
