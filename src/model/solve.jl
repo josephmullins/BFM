@@ -151,14 +151,15 @@ end
 function iterate3!(mod,t)
     (;θ,F,values) = mod
     (;α_ω, σ_L, σ_ω, Λ_ϵ, α_ω, Π_ϵ, Π_ω) = θ
-    (; N_d, N_ϵ,  N_ω, κ_W_grid, A_W, A_d, ω_grid, β) = F
+    (; N_d, N_ϵ,  N_ω, κ_W_grid, A_W, A_d, ω_grid, β, N_κ) = F
     (;VW5,VH5,VW3,VH3,vdL3,vdWD3,vdHD3) = values
 
     etpW = interpolate3(VW3,F,t)
     etpH = interpolate3(VH3,F,t)
 
     AW = A_W[t]
-    for ωi in axes(VW3,7), κi in axes(VW3,6), ϵi in axes(VW3,5), di in axes(VW3,4), eH in axes(VW3,3), eW in axes(VW3,2), l in axes(VW3,1)
+    @Threads.threads for idx in CartesianIndices((2,2,2,N_d,N_ϵ,N_κ,N_ω))
+    l,eW,eH,di,ϵi,κi,ωi = Tuple(idx)
         κ = κ_W_grid[t][κi]
         ω = ω_grid[ωi]
         ϵH = Λ_ϵ[ϵi]
@@ -224,7 +225,7 @@ end
 function iterate2!(mod,t)
     (;θ,F,values) = mod
     (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, Cτ) = θ
-    (;N_ϵ, N_ω, A_bar, A_grid, ω_grid, κ_W_grid, β,A_W,A_d) = F
+    (;N_ϵ, N_ω, A_bar, A_grid, ω_grid, κ_W_grid, β,A_W,A_d,N_d,N_a,N_κ) = F
     (;VW2,VH2,VW3,VH3,VW4,VH4,vdL2,vdWD2,vdHD2) = values
 
     etpW2 = interpolate2(VW2,F,t)
@@ -234,7 +235,9 @@ function iterate2!(mod,t)
     etpH3 = interpolate3(VH3,F,t)
 
     AW = A_W[t]
-    for ωi in axes(VW2,8), ai in axes(VW2,7), κi in axes(VW2,6), ϵi in axes(VW2,5), di in axes(VW2,4), eH in axes(VW2,3), eW in axes(VW2,2), l in axes(VW2,1)
+    @Threads.threads for idx in CartesianIndices((2,2,2,N_d,N_ϵ,N_κ,N_a,N_ω))
+        l,eW,eH,di,ϵi,κi,ai,ωi = Tuple(idx)
+        #ωi,ai,κi,ϵi,di,eH,eW,l = Tuple(idx)
         AK = Int(A_grid[ai])
         κ = κ_W_grid[t][κi]
         ω = ω_grid[ωi]

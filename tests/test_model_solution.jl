@@ -37,10 +37,8 @@ solve3!(mod)
 @time solve3!(mod)
 
 @show "Stage two testing"
-# these don't work yet
 iterate2!(mod,10);
 @time iterate2!(mod,10);
 
 solve2!(mod)
 @time solve2!(mod)
-
