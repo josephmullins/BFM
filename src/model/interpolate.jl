@@ -9,7 +9,7 @@ function interpolateW5(V,F,t)
     return etp
 end
 
-function interpolateW4(V,F,t)
+function interpolate4(V,F,t)
     (;N_d,N_ϵ,κ_W_grid,A_grid) = F
 
     @views etp = extrapolate(
@@ -20,6 +20,7 @@ function interpolateW4(V,F,t)
     Interpolations.Flat())
     return etp
 end
+
 
 function interpolate3(V,F,t)
     (;N_d,N_ϵ,κ_W_grid,N_ω) = F

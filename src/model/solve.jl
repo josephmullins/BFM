@@ -11,6 +11,60 @@ function inclusive_value(σ,values)
     return vmax + σ * log(sum((exp((v - vmax)/σ) for v in values)))
 end
 
+# ---- Expected values from work decision
+function work_decision(vw0,vw1,vw2,vh0,vh1,vh2,σ)
+    p1, p2 = work_probs(((vw1-vw0) / σ , (vw2-vw0) / σ))
+    evw = inclusive_value(σ,(vw0,vw1,vw2))
+    evh = vh0 + p1 * (vh1 - vh0) + p2 * (vh2 - vh0)
+    return evw, evh
+end
+
+# ---- Function to return the value and probability of a unilateral decision
+#   - choice 1 is the default unless both agents can agree on 0
+function unilateral_decision(vw0,vw1,vh0,vh1,σ)
+    # inclusive values (when get to choose)
+    evw = inclusive_value(σ,(vw0,vw1))
+    evh = inclusive_value(σ,(vh0,vh1))
+    
+    # probabilities
+    pw = 1 / (1 + exp(vw0-vw1))
+    ph = 1 / (1 + exp(vh0-vh1))
+    pr = pw + (1-pw)*ph
+
+    # expected values
+    vw = ph * vw1 + (1-ph) * evw
+    vh = pw * vh1 + (1-pw) * evh
+    return vw,vh,pr
+end
+
+# ---- Function to return the value and probability of a mutual decision
+#   - choice 0 is the default unless agents can agree on 1
+function bilateral_decision(vw0,vw1,vh0,vh1,σ)
+    # inclusive values (when get to choose)
+    evw = inclusive_value(σ,(vw0,vw1))
+    evh = inclusive_value(σ,(vh0,vh1))
+    
+    # probabilities
+    pw = 1 / (1 + exp(vw0-vw1))
+    ph = 1 / (1 + exp(vh0-vh1))
+    pr = pw * ph 
+    
+    # expected values
+    vw = ph * evw + (1-ph) * vw0
+    vh = pw * evh + (1-pw) * vh0
+    return vw,vh,pr
+end
+
+# ---- function to solve each stage
+function solve_all!(mod)
+    solve5!(mod)
+    solve4!(mod)
+    solve3!(mod)
+    solve2!(mod)
+    solve1!(mod)
+end
+
+
 # ----- Stage 5 ----- # 
 function solve5!(mod)
     (;F) = mod
@@ -70,7 +124,7 @@ function iterateW4!(mod,t)
     (;N_d,N_ϵ,A_W,A_d,κ_W_grid,A_grid,A_bar,β) = F
     
     # interpolate VW4 next period
-    etp = interpolateW4(VW4,F,t)
+    etp = interpolate4(VW4,F,t)
 
     # interpolate VW5
     etp5 = interpolateW5(VW5,F,t)
@@ -108,10 +162,10 @@ function iterateH4!(mod,t)
     (;θ, F, values) = mod
     (;Λ_ϵ,Π_ϵ) = θ
     (;VH4,VH5,vd4) = values
-    (;N_d,N_ϵ,A_W,A_d,κ_W_grid,A_grid,A_bar,β) = F
-    @views itp = interpolate(VH4[:,:,:,:,:,:,t+1], (NoInterp(),NoInterp(),NoInterp(), NoInterp(), BSpline(Cubic(Line(OnGrid()))), BSpline(Cubic(Line(OnGrid())))))
-    itp_scale = Interpolations.scale(itp, 1:2,1:2,1:N_d, 1:N_ϵ, κ_W_grid[t+1], A_grid)
-    etp = extrapolate(itp_scale,Interpolations.Flat())
+    (;A_W,A_d,κ_W_grid,A_grid,A_bar,β) = F
+
+    etp = interpolate4(VH4,F,t)
+
     AW = A_W[t]
     for ai in axes(VH4,6), κi in axes(VH4,5), ϵi in axes(VH4,4), di in axes(VH4,3),eH in axes(VH4,2), eW in axes(VH4,1)
         AH = AW + A_d[di]
@@ -176,42 +230,28 @@ function iterate3!(mod,t)
                 vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
                 vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
                 vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+0.5,i_next)
-                vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
+                vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+1,i_next)
             end
+            # ---- Work Decision
             vdL3[1,κi,i,t]  = (vW1 - vW0)/σ_L
             vdL3[2,κi,i,t]  = (vW2 - vW0)/σ_L
-            @views p1,p2 = work_probs(vdL3[:,κi,i,t])
+            VW,VH = work_decision(vW0,vW1,vW2,vH0,vH1,vH2,σ_L)
 
-            # continuation values for staying married
-            VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
-            VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
-
+            # ---- Divorce Decision
             # continuation values for getting divorced
             vw5 = VW5[eW,κi,t]
             vh5 = VH5[eH,di,ϵi,t]
-
-            # Emax values if either agent can choose their preferred option:
-            EVW3 = inclusive_value(σ_ω,(vw5,VW_tilde))
-            EVH3 = inclusive_value(σ_ω,(vh5,VH_tilde))
-
-            # probability that each agent prefers divorce:
-
-            vd_wd = (VW_tilde - vw5)  / σ_ω
-            vd_hd = (VH_tilde - vh5) / σ_ω
-            pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
-            phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
+            # save differences for simulation
+            vdWD3[κi,i,t] = (VW - vw5)  / σ_ω
+            vdHD3[κi,i,t] = (VH - vh5) / σ_ω
 
             # Finally, Emax values of arriving in this state
             if l==1 # mutual consent
-                VW3[κi,i,t] = (1 - phd)*VW_tilde + phd*EVW3
-                VH3[κi,i,t] = (1 - pwd)*VH_tilde + pwd*EVH3
+                VW3[κi,i,t],VH3[κi,i,t],_ = bilateral_decision(VW,vw5,VH,vh5,σ_ω)
             else            # unilateral
-                VW3[κi,i,t] = phd*vw5   + (1 - phd)*EVW3
-                VH3[κi,i,t] = pwd*vh5 + (1 - pwd)*EVH3
+                VW3[κi,i,t],VH3[κi,i,t],_ = unilateral_decision(VW,vw5,VH,vh5,σ_ω)
             end
             # store the value differences for simulation
-            vdWD3[κi,i,t] = vd_wd
-            vdHD3[κi,i,t] = vd_hd
         end
     end
 end
@@ -273,43 +313,123 @@ function iterate2!(mod,t)
                         vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+1,i_next)
                     end
                 end
+                #  ---- Work Decision
                 vdL2[1,κi,ai,i,t]  = (vW1 - vW0)/σ_L
                 vdL2[2,κi,ai,i,t]  = (vW2 - vW0)/σ_L
-                @views p1,p2 = work_probs(vdL2[:,κi,ai,i,t])
+                VW,VH = work_decision(vW0,vW1,vW2,vH0,vH1,vH2,σ_L)
 
-                # continuation values for staying married
-                VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
-                VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
-
+                # ---- Divorce Decision
                 # continuation values for getting divorced
                 νi = Int(AK+1)  # Index for expected value from the custody decision
                 vw4 = VW4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
                 vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
-
-                # Emax values if either agent can choose:
-                #EVW2 = inclusive_value(σ_ω,(1.,1.))
-                EVW2 = inclusive_value(σ_ω,(VW_tilde,vw4))
-                EVH2 = inclusive_value(σ_ω,(VH_tilde,vh4))
-
-                # probability that each agent prefers divorce:
-
-                vd_wd = (VW_tilde - vw4)  / σ_ω
-                vd_hd = (VH_tilde - vh4) / σ_ω
-                pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
-                phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
+                # save differences for simulation
+                vdWD2[κi,ai,i,t] = (VW - vw4)  / σ_ω
+                vdHD2[κi,ai,i,t] = (VH - vh4)  / σ_ω
 
                 if l==1 # mutual consent
-                    VW2[κi,ai,i,t] = (1 - phd)*VW_tilde + phd*EVW2
-                    VH2[κi,ai,i,t] = (1 - pwd)*VH_tilde + pwd*EVH2
+                    VW,VH,_ = bilateral_decision(VW,vw4,VH,vh4,σ_ω)
                 else            # unilateral
-                    VW2[κi,ai,i,t] = phd*vw4 + (1 - phd)*EVW2
-                    VH2[κi,ai,i,t] = pwd*vh4 + (1 - pwd)*EVH2
+                    VW,VH,_ = unilateral_decision(VW,vw4,VH,vh4,σ_ω)
                 end
-                vdWD2[κi,ai,i,t] = vd_wd
-                vdHD2[κi,ai,i,t] = vd_hd
+                VW2[κi,ai,i,t] = VW
+                VH2[κi,ai,i,t] = VH
             end
         end
     end
 end
 
 # ------ Stage 1 ----- #
+function iterate1!(mod,t)
+    (;θ,F,values) = mod
+    (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, σ_F,α_F) = θ
+    (;N_ϵ, N_ω, ω_grid, κ_W_grid, β,A_W,A_d,N_d,T_f) = F
+    (;VW1,VH1,VW2,VH2,VW3,VH3,vdL1,vdWD1,vdHD1,vdWF1,vdHF1,VW5,VH5) = values
+
+    #VW & VH : T_f-1 x N_d x N_ϵ x N_κ x N_ω
+    etpW = interpolate3(VW1,F,t)
+    etpH = interpolate3(VH1,F,t)
+
+    etpW3 = interpolate3(VW3,F,t)
+    etpH3 = interpolate3(VH3,F,t)
+
+    AW = A_W[t]
+    idx = CartesianIndices((N_ϵ,N_ω,N_d,2,2,2))
+    lin_idx = LinearIndices(idx)
+    @Threads.threads for i in axes(VW1,2)
+        ϵi,ωi,di,eH,eW,l = Tuple(idx[i])
+        for κi in axes(VW3,1)
+            κ = κ_W_grid[t][κi]
+            ω = ω_grid[ωi]
+            ϵH = Λ_ϵ[ϵi]
+            AH = AW + A_d[di]
+            vW0,vW1,vW2,vH0,vH1,vH2 = IU3(θ,eW,eH,AW,AH,ϵH,κ,ω)
+
+            if t+1<T_f
+                for ωii in 1:N_ω,ϵii in 1:N_ϵ
+                    i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
+                    vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
+                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+0.5,i_next)
+                    vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
+                    vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
+                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+0.5,i_next)
+                    vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+1,i_next)
+                end
+            else
+                for ωii=1:N_ω,ϵii=1:N_ϵ
+                    i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
+                    vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
+                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+0.5,i_next)
+                    vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+1,i_next)
+                    vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
+                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+0.5,i_next)
+                    vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+1,i_next)
+                end
+            end
+
+            # ----- Work Decision
+            vdL1[1,κi,i,t]  = (vW1 - vW0)/σ_L
+            vdL1[2,κi,i,t]  = (vW2 - vW0)/σ_L
+
+            VW,VH = work_decision(vW0,vW1,vW2,vH0,vH1,vH2,σ_L)
+
+            # ----- Divorce Decision
+            # continuation values for getting divorced
+            vw5 = VW5[eW,κi,t]
+            vh5 = VH5[eH,di,ϵi,t]
+            # save differences for simulation (?)
+            vdWD1[κi,i,t] = (VW - vw5) / σ_ω
+            vdHD1[κi,i,t] = (VH - vh5) / σ_ω
+
+            if l==1 #<- mutual consent case
+                VW,VH,_ = bilateral_decision(VW,vw5,VH,vh5,σ_ω)
+            else #<- unilateral case
+                VW,VH,_ = unilateral_decision(VW,vw5,VH,vh5,σ_ω)
+            end
+
+            # ------ Fertility Decision
+            # continuation values for having a kid
+            vwF = VW2[κi,1,i,t] + α_F
+            vhF = VH2[κi,1,i,t] + α_F
+            # save differences for simulation (?)
+            vdWF1[κi,i,t] = (VW - vwF) / σ_F
+            vdHF1[κi,i,t] = (VH - vhF) / σ_F
+
+            VW,VH,_ = bilateral_decision(VW,vwF,VH,vhF,σ_F)
+
+            # save the value of arriving in this time period at stage 1
+            VW1[κi,i,t] = VW
+            VH1[κi,i,t] = VH
+        end
+    end
+end
+
+function solve1!(mod)
+    (;F) = mod
+    (;T_f) = F
+    for t in reverse(1:T_f-1) # current period T_f-1-s
+        iterate1!(mod,t)
+    end
+end
+
+
