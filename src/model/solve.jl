@@ -158,56 +158,61 @@ function iterate3!(mod,t)
     etpH = interpolate3(VH3,F,t)
 
     AW = A_W[t]
-    @Threads.threads for idx in CartesianIndices((2,2,2,N_d,N_ϵ,N_κ,N_ω))
-    l,eW,eH,di,ϵi,κi,ωi = Tuple(idx)
-        κ = κ_W_grid[t][κi]
-        ω = ω_grid[ωi]
-        ϵH = Λ_ϵ[ϵi]
-        AH = AW + A_d[di]
-        vW0,vW1,vW2,vH0,vH1,vH2 = IU3(θ,eW,eH,AW,AH,ϵH,κ,ω)
-        # --- work decision
-        for ωii in 1:N_ω, ϵii in 1:N_ϵ
-            vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(l,eW,eH,di,ϵi,κ,ωii)
-            vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(l,eW,eH,di,ϵi,κ+0.5,ωii)
-            vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(l,eW,eH,di,ϵi,κ+1,ωii)
-            vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(l,eW,eH,di,ϵi,κ,ωii)
-            vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(l,eW,eH,di,ϵi,κ+0.5,ωii)
-            vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(l,eW,eH,di,ϵi,κ+1,ωii)
+    idx = CartesianIndices((N_ϵ,N_ω,N_d,2,2,2))
+    lin_idx = LinearIndices(idx)
+    @Threads.threads for i in axes(VW3,2)
+        ϵi,ωi,di,eH,eW,l = Tuple(idx[i])
+        for κi in axes(VW3,1)
+            κ = κ_W_grid[t][κi]
+            ω = ω_grid[ωi]
+            ϵH = Λ_ϵ[ϵi]
+            AH = AW + A_d[di]
+            vW0,vW1,vW2,vH0,vH1,vH2 = IU3(θ,eW,eH,AW,AH,ϵH,κ,ω)
+            # --- work decision
+            for ωii in 1:N_ω, ϵii in 1:N_ϵ
+                i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
+                vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
+                vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+0.5,i_next)
+                vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
+                vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
+                vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+0.5,i_next)
+                vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
+            end
+            vdL3[1,κi,i,t]  = (vW1 - vW0)/σ_L
+            vdL3[2,κi,i,t]  = (vW2 - vW0)/σ_L
+            @views p1,p2 = work_probs(vdL3[:,κi,i,t])
+
+            # continuation values for staying married
+            VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
+            VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
+
+            # continuation values for getting divorced
+            vw5 = VW5[eW,κi,t]
+            vh5 = VH5[eH,di,ϵi,t]
+
+            # Emax values if either agent can choose their preferred option:
+            EVW3 = inclusive_value(σ_ω,(vw5,VW_tilde))
+            EVH3 = inclusive_value(σ_ω,(vh5,VH_tilde))
+
+            # probability that each agent prefers divorce:
+
+            vd_wd = (VW_tilde - vw5)  / σ_ω
+            vd_hd = (VH_tilde - vh5) / σ_ω
+            pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
+            phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
+
+            # Finally, Emax values of arriving in this state
+            if l==1 # mutual consent
+                VW3[κi,i,t] = (1 - phd)*VW_tilde + phd*EVW3
+                VH3[κi,i,t] = (1 - pwd)*VH_tilde + pwd*EVH3
+            else            # unilateral
+                VW3[κi,i,t] = phd*vw5   + (1 - phd)*EVW3
+                VH3[κi,i,t] = pwd*vh5 + (1 - pwd)*EVH3
+            end
+            # store the value differences for simulation
+            vdWD3[κi,i,t] = vd_wd
+            vdHD3[κi,i,t] = vd_hd
         end
-        vdL3[1,l,eW,eH,di,ϵi,κi,ωi,t]  = (vW1 - vW0)/σ_L
-        vdL3[2,l,eW,eH,di,ϵi,κi,ωi,t]  = (vW2 - vW0)/σ_L
-        @views p1,p2 = work_probs(vdL3[:,l,eW,eH,di,ϵi,κi,ωi,t])
-
-        # continuation values for staying married
-        VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
-        VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
-
-        # continuation values for getting divorced
-        vw5 = VW5[eW,κi,t]
-        vh5 = VH5[eH,di,ϵi,t]
-
-        # Emax values if either agent can choose their preferred option:
-        EVW3 = inclusive_value(σ_ω,(vw5,VW_tilde))
-        EVH3 = inclusive_value(σ_ω,(vh5,VH_tilde))
-
-        # probability that each agent prefers divorce:
-
-        vd_wd = (VW_tilde - vw5)  / σ_ω
-        vd_hd = (VH_tilde - vh5) / σ_ω
-        pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
-        phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
-
-        # Finally, Emax values of arriving in this state
-        if l==1 # mutual consent
-            VW3[l,eW,eH,di,ϵi,κi,ωi,t] = (1 - phd)*VW_tilde + phd*EVW3
-            VH3[l,eW,eH,di,ϵi,κi,ωi,t] = (1 - pwd)*VH_tilde + pwd*EVH3
-        else            # unilateral
-            VW3[l,eW,eH,di,ϵi,κi,ωi,t] = phd*vw5   + (1 - phd)*EVW3
-            VH3[l,eW,eH,di,ϵi,κi,ωi,t] = pwd*vh5 + (1 - pwd)*EVH3
-        end
-        # store the value differences for simulation
-        vdWD3[l,eW,eH,di,ϵi,κi,ωi,t] = vd_wd
-        vdHD3[l,eW,eH,di,ϵi,κi,ωi,t] = vd_hd
     end
 end
 
@@ -235,68 +240,75 @@ function iterate2!(mod,t)
     etpH3 = interpolate3(VH3,F,t)
 
     AW = A_W[t]
-    @Threads.threads for idx in CartesianIndices((2,2,2,N_d,N_ϵ,N_κ,N_a,N_ω))
-        l,eW,eH,di,ϵi,κi,ai,ωi = Tuple(idx)
-        #ωi,ai,κi,ϵi,di,eH,eW,l = Tuple(idx)
-        AK = Int(A_grid[ai])
-        κ = κ_W_grid[t][κi]
-        ω = ω_grid[ωi]
-        ϵH = Λ_ϵ[ϵi]
-        AH = AW + A_d[di]
-        vW0,vW1,vW2,vH0,vH1,vH2 = IU2(θ,eW,eH,AW,AH,ϵH,κ,ω,AK)
-        if AK+1<A_bar
-            for ωii=1:N_ω,ϵii=1:N_ϵ
-                vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(l,eW,eH,di,ϵi,κ,AK+1,ωii)
-                vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(l,eW,eH,di,ϵi,κ+0.5,AK+1,ωii)
-                vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(l,eW,eH,di,ϵi,κ+1,AK+1,ωii)
-                vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(l,eW,eH,di,ϵi,κ,AK+1,ωii)
-                vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(l,eW,eH,di,ϵi,κ+0.5,AK+1,ωii)
-                vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(l,eW,eH,di,ϵi,κ+1,AK+1,ωii)
-            end
-        else
-            for ωii=1:N_ω,ϵii=1:N_ϵ
-                vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(l,eW,eH,di,ϵi,κ,ωii)
-                vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(l,eW,eH,di,ϵi,κ+0.5,ωii)
-                vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(l,eW,eH,di,ϵi,κ+1,ωii)
-                vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(l,eW,eH,di,ϵi,κ,ωii)
-                vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(l,eW,eH,di,ϵi,κ+0.5,ωii)
-                vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(l,eW,eH,di,ϵi,κ+1,ωii)
+    idx = CartesianIndices((N_ϵ,N_ω,N_d,2,2,2))
+    lin_idx = LinearIndices(idx)
+    @Threads.threads for i in axes(VW2,3)
+        ϵi,ωi,di,eH,eW,l = Tuple(idx[i])
+        for ai in axes(VW2,2)
+            for κi in axes(VW2,1)
+                AK = Int(A_grid[ai])
+                κ = κ_W_grid[t][κi]
+                ω = ω_grid[ωi]
+                ϵH = Λ_ϵ[ϵi]
+                AH = AW + A_d[di]
+                vW0,vW1,vW2,vH0,vH1,vH2 = IU2(θ,eW,eH,AW,AH,ϵH,κ,ω,AK)
+                if AK+1<A_bar
+                    for ωii in 1:N_ω, ϵii in 1:N_ϵ
+                        i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
+                        vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ,AK+1,i_next)
+                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ+0.5,AK+1,i_next)
+                        vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ+1,AK+1,i_next)
+                        vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ,AK+1,i_next)
+                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ+0.5,AK+1,i_next)
+                        vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ+1,AK+1,i_next)
+                    end
+                else
+                    for ωii in 1:N_ω, ϵii in 1:N_ϵ
+                        i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
+                        vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
+                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+0.5,i_next)
+                        vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+1,i_next)
+                        vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
+                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+0.5,i_next)
+                        vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+1,i_next)
+                    end
+                end
+                vdL2[1,κi,ai,i,t]  = (vW1 - vW0)/σ_L
+                vdL2[2,κi,ai,i,t]  = (vW2 - vW0)/σ_L
+                @views p1,p2 = work_probs(vdL2[:,κi,ai,i,t])
+
+                # continuation values for staying married
+                VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
+                VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
+
+                # continuation values for getting divorced
+                νi = Int(AK+1)  # Index for expected value from the custody decision
+                vw4 = VW4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
+                vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
+
+                # Emax values if either agent can choose:
+                #EVW2 = inclusive_value(σ_ω,(1.,1.))
+                EVW2 = inclusive_value(σ_ω,(VW_tilde,vw4))
+                EVH2 = inclusive_value(σ_ω,(VH_tilde,vh4))
+
+                # probability that each agent prefers divorce:
+
+                vd_wd = (VW_tilde - vw4)  / σ_ω
+                vd_hd = (VH_tilde - vh4) / σ_ω
+                pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
+                phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
+
+                if l==1 # mutual consent
+                    VW2[κi,ai,i,t] = (1 - phd)*VW_tilde + phd*EVW2
+                    VH2[κi,ai,i,t] = (1 - pwd)*VH_tilde + pwd*EVH2
+                else            # unilateral
+                    VW2[κi,ai,i,t] = phd*vw4 + (1 - phd)*EVW2
+                    VH2[κi,ai,i,t] = pwd*vh4 + (1 - pwd)*EVH2
+                end
+                vdWD2[κi,ai,i,t] = vd_wd
+                vdHD2[κi,ai,i,t] = vd_hd
             end
         end
-        vdL2[1,l,eW,eH,di,ϵi,κi,ai,ωi,t]  = (vW1 - vW0)/σ_L
-        vdL2[2,l,eW,eH,di,ϵi,κi,ai,ωi,t]  = (vW2 - vW0)/σ_L
-        @views p1,p2 = work_probs(vdL2[:,l,eW,eH,di,ϵi,κi,ai,ωi,t])
-
-        # continuation values for staying married
-        VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
-        VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
-
-        # continuation values for getting divorced
-        νi = Int(AK+1)  # Index for expected value from the custody decision
-        vw4 = VW4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
-        vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
-
-        # Emax values if either agent can choose:
-        #EVW2 = inclusive_value(σ_ω,(1.,1.))
-        EVW2 = inclusive_value(σ_ω,(VW_tilde,vw4))
-        EVH2 = inclusive_value(σ_ω,(VH_tilde,vh4))
-
-        # probability that each agent prefers divorce:
-
-        vd_wd = (VW_tilde - vw4)  / σ_ω
-        vd_hd = (VH_tilde - vh4) / σ_ω
-        pwd = 1 / (1 + exp(vd_wd)) # wife's prob of divorce
-        phd = 1 / (1 + exp(vd_hd)) # husband's prob of divorce
-
-        if l==1 # mutual consent
-            VW2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = (1 - phd)*VW_tilde + phd*EVW2
-            VH2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = (1 - pwd)*VH_tilde + pwd*EVH2
-        else            # unilateral
-            VW2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = phd*vw4 + (1 - phd)*EVW2
-            VH2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = pwd*vh4 + (1 - pwd)*EVH2
-        end
-        vdWD2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = vd_wd
-        vdHD2[l,eW,eH,di,ϵi,κi,ai,ωi,t] = vd_hd
     end
 end
 
