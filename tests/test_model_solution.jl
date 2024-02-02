@@ -2,7 +2,7 @@ include("../src/model/model.jl")
 
 F = FixedParams()
 θ = Params(F)
-V = values(F)
+V = values(F);
 
 mod = (;F,θ,values=V);
 
@@ -38,8 +38,8 @@ solve3!(mod)
 
 @show "Stage two testing"
 # these don't work yet
-iterate2!(mod,10)
-@time iterate2!(mod,10)
+iterate2!(mod,10);
+@time iterate2!(mod,10);
 
 solve2!(mod)
 @time solve2!(mod)

@@ -1,12 +1,12 @@
 
 # ----- Work choices ----- #
 function work_probs(v) #<- value of part-time and full-time work relative to not-working
-    denom = 1 + exp(v[1]) + exp(v[2])
+    denom = 1. + exp(v[1]) + exp(v[2])
     p1 = exp(v[1]) / denom
     p2 = exp(v[2]) / denom
     return p1, p2
 end
-function inclusive_value(σ,values...)
+function inclusive_value(σ,values)
     vmax = max(values...)
     return vmax + σ * log(sum((exp((v - vmax)/σ) for v in values)))
 end
@@ -34,7 +34,7 @@ function iterateW5!(mod,t)
         v1 = U1 + β*etp(eW,κ+0.5)
         v2 = U2 + β*etp(eW,κ+1)
         
-        VW5[eW,κi,t] = inclusive_value(σ_L,v0,v1,v2) 
+        VW5[eW,κi,t] = inclusive_value(σ_L,(v0,v1,v2)) 
         vd5[1,eW,κi,t] = (v1 - v0)/σ_L # difference in choice utility of not working and working
         vd5[2,eW,κi,t] = (v2 - v0)/σ_L # difference in choice utility of not working and working
     end
@@ -100,7 +100,7 @@ function iterateW4!(mod,t)
 
         vd4[1,eW,eH,di,ϵi,κi,ai,t] = (v1 - v0)/σ_L # diffrence in choice utility of not working and working
         vd4[2,eW,eH,di,ϵi,κi,ai,t] = (v2 - v0)/σ_L # diffrence in choice utility of not working and working
-        VW4[eW,eH,di,ϵi,κi,ai,t] = inclusive_value(σ_L,v0,v1,v2)
+        VW4[eW,eH,di,ϵi,κi,ai,t] = inclusive_value(σ_L,(v0,v1,v2))
     end
 end
 
@@ -178,7 +178,7 @@ function iterate3!(mod,t)
         @views p1,p2 = work_probs(vdL3[:,l,eW,eH,di,ϵi,κi,ωi,t])
 
         # continuation values for staying married
-        VW_tilde = inclusive_value(σ_L,vW0,vW1,vW2)
+        VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
         VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
 
         # continuation values for getting divorced
@@ -186,8 +186,8 @@ function iterate3!(mod,t)
         vh5 = VH5[eH,di,ϵi,t]
 
         # Emax values if either agent can choose their preferred option:
-        EVW3 = inclusive_value(σ_ω,vw5,VW_tilde)
-        EVH3 = inclusive_value(σ_ω,vh5,VH_tilde)
+        EVW3 = inclusive_value(σ_ω,(vw5,VW_tilde))
+        EVH3 = inclusive_value(σ_ω,(vh5,VH_tilde))
 
         # probability that each agent prefers divorce:
 
@@ -265,7 +265,7 @@ function iterate2!(mod,t)
         @views p1,p2 = work_probs(vdL2[:,l,eW,eH,di,ϵi,κi,ai,ωi,t])
 
         # continuation values for staying married
-        VW_tilde = inclusive_value(σ_L,vW0,vW1,vW2)
+        VW_tilde = inclusive_value(σ_L,(vW0,vW1,vW2))
         VH_tilde = vH0 + p1*(vH1 - vH0) + p2*(vH2 - vH0)
 
         # continuation values for getting divorced
@@ -274,8 +274,9 @@ function iterate2!(mod,t)
         vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
 
         # Emax values if either agent can choose:
-        EVW2 = inclusive_value(σ_ω,VW_tilde,vw4)
-        EVH2 = inclusive_value(σ_ω,VH_tilde,vh4)
+        #EVW2 = inclusive_value(σ_ω,(1.,1.))
+        EVW2 = inclusive_value(σ_ω,(VW_tilde,vw4))
+        EVH2 = inclusive_value(σ_ω,(VH_tilde,vh4))
 
         # probability that each agent prefers divorce:
 
