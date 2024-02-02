@@ -44,4 +44,3 @@ iterate2!(mod,10)
 solve2!(mod)
 @time solve2!(mod)
 
-

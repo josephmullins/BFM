@@ -234,7 +234,7 @@ function iterate2!(mod,t)
     etpH3 = interpolate3(VH3,F,t)
 
     AW = A_W[t]
-    Threads.@threads for ωi in axes(VW2,8), ai in axes(VW2,7), κi in axes(VW2,6), ϵi in axes(VW2,5), di in axes(VW2,4), eH in axes(VW2,3), eW in axes(VW2,2), l in axes(VW2,1)
+    for ωi in axes(VW2,8), ai in axes(VW2,7), κi in axes(VW2,6), ϵi in axes(VW2,5), di in axes(VW2,4), eH in axes(VW2,3), eW in axes(VW2,2), l in axes(VW2,1)
         AK = Int(A_grid[ai])
         κ = κ_W_grid[t][κi]
         ω = ω_grid[ωi]
