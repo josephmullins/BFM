@@ -1,4 +1,4 @@
-using LinearAlgebra, Interpolations, SparseArrays
+using LinearAlgebra, Interpolations, SparseArrays, Distributions
 include("transitions.jl")
 
 #-- define the parameters that won't change through the problem
@@ -74,32 +74,28 @@ function values(F);
     # pre-allocated value function arrays
     # Stage 5: education group x ...
     VW5   = zeros(2,N_κ, N_t+1),
-    vd5   = zeros(2,2,N_κ,N_t),
+    pL5   = zeros(2,2,N_κ,N_t),
     VH5   = zeros(2,N_d, N_ϵ,N_t + 1),
     # Stage 4: education group x ...
     VW4   = zeros(2,2,N_d, N_ϵ, N_κ, N_a, N_t+1),
     VH4   = zeros(2,2,N_d, N_ϵ, N_κ, N_a, N_t+1),
-    vd4   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_t),
+    pL4   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_a, N_t),
     # Stage 3: divorce law (mutual/unilateral) x education group W x education group H ...
     VW3   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t+1),
     VH3   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t+1),
-    vdL3  = zeros(2, N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t),
-    vdWD3 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t),
-    vdHD3 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t),
+    pL3  = zeros(2,N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t),
+    pD3 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, N_t),
     # Stage 2: divorce law (mutual/unilateral) x education group W x education group H ...
     VW2  = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t+1),
     VH2  = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t+1),
-    vdL2 = zeros(2,N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t+1),
-    vdWD2 = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t),
-    vdHD2 = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t),
+    pL2 = zeros(2,N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t+1),
+    pD2 = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t),
     # Stage 1: divorce law (mutual/unilateral) x education group W x education group H ...
     VW1   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f),
     VH1   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f),
-    vdL1  = zeros(2,N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
-    vdWD1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
-    vdHD1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
-    vdWF1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
-    vdHF1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    pL1  = zeros(2,N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    pD1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    pF = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
 
     # Expected custody cost
     Cτ = zeros(N_a) )
@@ -108,3 +104,4 @@ end
 include("utility.jl")
 include("interpolate.jl")
 include("solve.jl")
+include("simulate.jl")
