@@ -42,3 +42,10 @@ iterate2!(mod,10);
 
 solve2!(mod)
 @time solve2!(mod)
+
+@show "Stage one testing"
+iterate1!(mod,10);
+@time iterate1!(mod,10);
+
+solve1!(mod)
+@time solve1!(mod)

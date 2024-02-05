@@ -93,13 +93,13 @@ function values(F);
     vdWD2 = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t),
     vdHD2 = zeros(N_κ,N_a, 2 * 2 * 2 *  N_d * N_ϵ * N_ω , N_t),
     # Stage 1: divorce law (mutual/unilateral) x education group W x education group H ...
-    VW1   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f),
-    VH1   = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f),
-    vdL1  = zeros(2,2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
-    vdWD1 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
-    vdHD1 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
-    vdWF1 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
-    vdHF1 = zeros(2,2,2, N_d, N_ϵ, N_κ, N_ω, T_f-1),
+    VW1   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f),
+    VH1   = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f),
+    vdL1  = zeros(2,N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    vdWD1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    vdHD1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    vdWF1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
+    vdHF1 = zeros(N_κ, 2 * 2 * 2 *  N_d * N_ϵ * N_ω, T_f-1),
 
     # Expected custody cost
     Cτ = zeros(N_a) )
