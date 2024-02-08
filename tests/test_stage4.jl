@@ -22,7 +22,19 @@ V = values(F);
 # model_moms(TD,TF,D,L_sim) 
 moms0 = data_moms(M,P)
 ssq(θ,V,F,moms0,M,P.L)
-# NEXT: write an update function for the parameters.
 
-x0 = get_x(θ)
-optimize(x->ssq(update(x,θ,F),V,F,moms0,M,P.L),x0,Optim.Options(iterations=10))
+#x0 = get_x(θ)
+#res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,M,P.L),x0,Optim.Options(iterations=100))
+
+blocks = [1:2,3:4,5:6,7:11]
+for b in blocks
+    xcurrent = get_x(θ)
+    x0 = xcurrent[b]
+    res = optimize(x->ssq(update(x,b,θ,F),V,F,moms0,M,P.L),x0,Optim.Options(iterations=30))
+    xcurrent[b] .= res.minimizer
+    θ = update(xcurrent,θ,F)
+end
+
+m1 = get_moments(θ,V,F,M,P.L)
+display([moms0 m1])
+

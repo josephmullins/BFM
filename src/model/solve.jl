@@ -103,7 +103,7 @@ function iterateH5!(mod,t)
         ϵH = Λ_ϵ[ϵi]
         AH = AW + A_d[di]
         U = IUH5(θ,eH,AH,ϵH)
-        @views VH5[eH,di,ϵi,t] = U + β*dot(VH5[eH,di,:,t],Π_ϵ[ϵi,:])
+        @views VH5[eH,di,ϵi,t] = U + β*dot(VH5[eH,di,:,t+1],Π_ϵ[ϵi,:])
     end
 end
 

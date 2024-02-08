@@ -1,4 +1,4 @@
-using LinearAlgebra, Interpolations, SparseArrays, Distributions
+using LinearAlgebra, Interpolations, SparseArrays, Distributions, Random
 include("transitions.jl")
 
 #-- define the parameters that won't change through the problem

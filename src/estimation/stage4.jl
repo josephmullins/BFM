@@ -66,8 +66,10 @@ function update(x,ii,θ,F)
     return update(xnew,θ,F)
 end
 
+# let's fix these?
 function get_moments(θ,values,F,dat,legal)
-    solve_all!((;θ,values,F))
+    mod = (;θ,values,F)
+    solve_all!(mod)
     TD,TF,L_sim, Ω_sim, D = data_gen(mod,dat,legal)
     return model_moms(TD,TF,D,L_sim)
 end
