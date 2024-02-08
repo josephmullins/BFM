@@ -26,6 +26,7 @@ ssq(θ,V,F,moms0,M,P.L)
 #x0 = get_x(θ)
 #res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,M,P.L),x0,Optim.Options(iterations=100))
 
+# doesn't work that well, try the simultaneous version?
 blocks = [1:2,3:4,5:6,7:11]
 for b in blocks
     xcurrent = get_x(θ)
@@ -35,6 +36,6 @@ for b in blocks
     θ = update(xcurrent,θ,F)
 end
 
-m1 = get_moments(θ,V,F,M,P.L)
+m1 = get_moments(θ2,V,F,M,P.L)
 display([moms0 m1])
 
