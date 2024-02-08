@@ -85,7 +85,7 @@ function iterateW5!(mod,t)
         κ = κ_W_grid[t][κi]
         U0,U1,U2 = IUW5(θ,F,eW,AW,κ)
         v0 = U0 + β*etp(eW,κ)
-        v1 = U1 + β*etp(eW,κ+0.5)
+        v1 = U1 + β*etp(eW,κ)
         v2 = U2 + β*etp(eW,κ+1)
         
         VW5[eW,κi,t] = inclusive_value(σ_L,(v0,v1,v2))
@@ -142,12 +142,12 @@ function iterateW4!(mod,t)
             v2 = U2
             for ϵii in axes(Π_ϵ,2)
                 v0 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ,AK+1)
-                v1 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+0.5,AK+1)
+                v1 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ,AK+1)
                 v2 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+1,AK+1)
             end
         else
             v0 = U0 + β*etp5(eW,κ)
-            v1 = U1 + β*etp5(eW,κ+0.5)
+            v1 = U1 + β*etp5(eW,κ)
             v2 = U2 + β*etp5(eW,κ+1)
         end
 
@@ -177,7 +177,7 @@ function iterateH4!(mod,t)
             v2 = U2
             for ϵii in axes(Π_ϵ,2)
                 v0 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ,AK+1)
-                v1 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+0.5,AK+1)
+                v1 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ,AK+1)
                 v2 += β*Π_ϵ[ϵi,ϵii]*etp(eW,eH,di,ϵii,κ+1,AK+1)
             end
         else
@@ -224,10 +224,10 @@ function iterate3!(mod,t)
             for ωii in 1:N_ω, ϵii in 1:N_ϵ
                 i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
                 vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
-                vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+0.5,i_next)
+                vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
                 vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
                 vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
-                vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+0.5,i_next)
+                vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
                 vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+1,i_next)
             end
             # ---- Work Decision
@@ -263,7 +263,7 @@ end
 
 function iterate2!(mod,t)
     (;θ,F,values) = mod
-    (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, Cτ) = θ
+    (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, Cτ, α_l) = θ
     (;N_ϵ, N_ω, A_bar, A_grid, ω_grid, κ_W_grid, β,A_W,A_d,N_d,N_a,N_κ) = F
     (;VW2,VH2,VW3,VH3,VW4,VH4,pL2,pD2) = values
 
@@ -290,20 +290,20 @@ function iterate2!(mod,t)
                     for ωii in 1:N_ω, ϵii in 1:N_ϵ
                         i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
                         vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ,AK+1,i_next)
-                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ+0.5,AK+1,i_next)
+                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ,AK+1,i_next)
                         vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW2(κ+1,AK+1,i_next)
                         vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ,AK+1,i_next)
-                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ+0.5,AK+1,i_next)
+                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ,AK+1,i_next)
                         vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH2(κ+1,AK+1,i_next)
                     end
                 else
                     for ωii in 1:N_ω, ϵii in 1:N_ϵ
                         i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
                         vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
-                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+0.5,i_next)
+                        vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
                         vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+1,i_next)
                         vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
-                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+0.5,i_next)
+                        vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
                         vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+1,i_next)
                     end
                 end
@@ -314,8 +314,8 @@ function iterate2!(mod,t)
                 # ---- Divorce Decision
                 # continuation values for getting divorced
                 νi = Int(AK+1)  # Index for expected value from the custody decision
-                vw4 = VW4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
-                vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - Cτ[νi]
+                vw4 = VW4[eW,eH,di,ϵi,κi,ai,t] - α_l * Cτ[νi]
+                vh4 = VH4[eW,eH,di,ϵi,κi,ai,t] - α_l * Cτ[νi]
 
                 if l==1 # mutual consent
                     VW,VH,pD2[κi,ai,i,t] = bilateral_decision(VW,vw4,VH,vh4,σ_ω)
@@ -359,20 +359,20 @@ function iterate1!(mod,t)
                 for ωii in 1:N_ω,ϵii in 1:N_ϵ
                     i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
                     vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
-                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+0.5,i_next)
+                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ,i_next)
                     vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW(κ+1,i_next)
                     vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
-                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+0.5,i_next)
+                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ,i_next)
                     vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH(κ+1,i_next)
                 end
             else
                 for ωii=1:N_ω,ϵii=1:N_ϵ
                     i_next = lin_idx[ϵii,ωii,di,eH,eW,l]
                     vW0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
-                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+0.5,i_next)
+                    vW1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ,i_next)
                     vW2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpW3(κ+1,i_next)
                     vH0 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
-                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+0.5,i_next)
+                    vH1 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ,i_next)
                     vH2 += β*Π_ϵ[ϵi,ϵii]*Π_ω[ωi,ωii]*etpH3(κ+1,i_next)
                 end
             end

@@ -37,11 +37,12 @@ function Params(F)
     π_ω = 0.8
     Π_ω = transmat_ω(π_ω,N_ω)
     return (;
+    β = F.β , # inherit the discount factor
     α_C = 1. ,    # Consumption coefficient
-    α_ℓ = 0.5 ,   # Leisure coefficient
+    α_l = 0.5 ,   # Leisure coefficient
     γ_YW = fill(0.5,2,3), # Coefficients in wife's income process, Y_Wt = γ_YW[1] + γ_YW[2]*A_W + γ_YW[3]*κ_W
     σ_L = 1.          ,  # Scale parameter of wife labor shock, ϵ_L ∼ Gumbel(0,σ_L)
-    γ_YH = fill(0.5,2,2) , # Coefficients in husband's income process, Y_Ht = γ_YH[1] + γ_YH[2]*A_H + ϵ
+    γ_YH = fill(0.5,2,3) , # Coefficients in husband's income process, Y_Ht = γ_YH[1] + γ_YH[2]*A_H + ϵ
     # Husband income shock ϵ_t+1 = ρ_ϵ*ϵ_t + η_t+1, η ∼ N(0,σ_η^2)
     ρ_ϵ = 0.9 ,
     σ_η = 1. ,
