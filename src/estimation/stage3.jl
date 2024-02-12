@@ -18,7 +18,7 @@ function stage3(d,τgrid,cprobs) # Ebar = E[1/(1+)]
     m = @chain phi_d begin
         innerjoin(phi_m,on=:AGE)
         @transform :r = :PHId ./ :PHIm
-        @combine m=sum(:wght .* :r) / sum(:wght)
+        @combine :m=sum(:wght .* :r) / sum(:wght)
         _.m[1]
     end
     modratio(ρ,τgrid,p) = sum((τgrid ./ (1 .+ ρ.*(1 .- τgrid))).*p)

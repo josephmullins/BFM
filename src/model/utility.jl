@@ -24,7 +24,7 @@ function IUH5(θ,eH,AH,ϵH)
     return U
 end
 
-## Stage 4 (add part-time work decision?)
+## Stage 4
 
 # utility function
 function IUW4(θ,F,edW,edH,AW,κ,AH,ϵH,AK)
@@ -84,7 +84,7 @@ function IU2(θ,eW,eH,AW,AH,ϵH,κ,ω,AK)
     u0 = α_l * αΓ_τHa[AK+1]*log(72) + α_l * αΓ_τWa[AK+1]*log(112)
     u1 = α_l * αΓ_τHa[AK+1]*log(72) + α_l * αΓ_τWa[AK+1]*log(92)
     u2 = α_l * αΓ_τHa[AK+1]*log(72) + α_l * αΓ_τWa[AK+1]*log(72)
-    vω = α_νH0[1]+α_νH0[2]*AK + α_νH1[1]+α_νH1[2]*AK*ω
+    vω = α_νH0[1]+α_νH0[2]*AK + α_νH1[1]*ω +α_νH1[2]*AK*ω
 
     UW0 += u0 + vω
     UW1 += u1 + vω

@@ -46,14 +46,15 @@ function model_moms(TD,TF,D,Lsim)
             mean(Lsim[D].==1))
     moms[5:7] .= (mean(TD.<x) for x in (5,10,15))
     moms[8:10] .= (mean(TF.<x) for x in (2,4,6))
-    moms[11:14] .= (mean((TD .- TF).<x) for x in (0,5,10,15))
+    I = TD.<9998
+    moms[11:14] .= (mean((TD[I] .- TF[I]).<x) for x in (0,5,10,15))
     return moms
 end
 
 function update(x,θ,F)
     π_ω = 1/(1+exp(x[12]))
     Π_ω = transmat_ω(π_ω, F.N_ω)
-    return (;θ..., α_l=exp(x[1]), σ_L=exp(x[2]),α_F=x[3], σ_F=exp(x[4]), α_ω=[x[5],exp(x[6])], α_νH0=x[7:8], α_νH1=x[9:10], σ_ω=exp(x[11]), π_ω=π_ω, Π_ω = Π_ω)
+    return (;θ..., α_l=exp(x[1]), σ_L=exp(x[2]),α_F=x[3], σ_F=exp(x[4]), α_ω=[x[5],exp(x[6])], α_νH0=x[7:8], α_νH1=x[9:10], σ_ω=exp(x[11]), π_ω, Π_ω)
 end
 
 function get_x(θ)
@@ -77,6 +78,18 @@ end
 function ssq(θ,values,F,moms0,dat,legal)
     moms1 = get_moments(θ,values,F,dat,legal)
     ssq_ = sum((moms1 .- moms0).^2)
+    if isnan(ssq_)
+        println(Inf)
+        return Inf
+    else
+        println(ssq_)
+        return ssq_
+    end
+end
+
+function ssq(θ,wght,values,F,moms0,dat,legal)
+    moms1 = get_moments(θ,values,F,dat,legal)
+    ssq_ = sum(wght .* (moms1 .- moms0).^2)
     if isnan(ssq_)
         println(Inf)
         return Inf

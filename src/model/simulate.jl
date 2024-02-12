@@ -18,7 +18,12 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
     pL1,pL2,pL3,pL4,pL5,pD1,pD2,pD3,pF = interpolate_probs(values,F)
     idx = LinearIndices((N_ϵ,N_ω,N_d,2,2,2))
     πϵ = [Categorical(Π_ϵ[ϵi,:]) for ϵi=1:N_ϵ]
+    πϵ0 = eigvecs(I(N_ϵ) .- Π_ϵ')[:,1]
+    πϵ0 ./= sum(πϵ0)
+    πϵ_init = Categorical(πϵ0)
+
     πω = [Categorical(Π_ω[ωi,:]) for ωi=1:N_ω]
+    πω0 = Categorical(fill(1/N_ω,N_ω))
     N = length(dat.edW)
     TD = zeros(Int64,N)
     TF = zeros(Int64,N)
@@ -35,8 +40,9 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
         AW0 = max(dat.YMAR[n]-dat.YBIRTH_M[n],18)
         maxT = dat.tlength[n]
         κ = dat.exp0[n]
-        ωt = N_ω
-        ϵt = 3 #<- TODO: we need to make this a draw from the steady state
+        #ωt = N_ω #<- everyone starts at the highest draw
+        ωt = rand(πω0) #<- try this also
+        ϵt = rand(πϵ_init) #<- TODO: we need to make this a draw from the steady state
         #ϵt = rand(πϵ[3]) # a random draw of ϵt given ϵ(t-1)=0
         tM = 1
         tF = 9999
