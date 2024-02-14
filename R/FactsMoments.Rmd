@@ -25,7 +25,7 @@ lc_moms <- P %>%
   filter(AGE_MAR>=18) %>%
   group_by(M_AGE) %>%
   filter(M_AGE>=18,M_AGE<=45) %>%
-  summarize(Divorced = mean(DIV),Kids = mean(YBIRTH<=YEAR),FT = mean(M_hrs>1500,na.rm = TRUE),PT = mean(M_hrs>0 & M_hrs<1500,na.rm = TRUE),DivKids = mean(DIV & YBIRTH<=YEAR)) %>%
+  summarize(Divorced = mean(DIV),Kids = mean(YBIRTH<=YEAR),FT = mean(M_hrs>1750,na.rm = TRUE),PT = mean(M_hrs>0 & M_hrs<1750,na.rm = TRUE),DivKids = mean(DIV & YBIRTH<=YEAR)) %>%
   pivot_longer(-M_AGE)
 
 lc_moms %>%
@@ -34,15 +34,16 @@ lc_moms %>%
 ```
 
 ```{r}
-P %>%
-  filter(M_AGE==18) %>%
-  select(MID,YEAR,YBIRTH,YMAR,YBIRTH_M) %>%
-  filter(YEAR>=YBIRTH)
+lc_moms <- P %>%
+  mutate(AGE_MAR = YMAR-YBIRTH_M) %>%
+  filter(AGE_MAR>=18) %>%
+  group_by(M_AGE,edW) %>%
+  filter(M_AGE>=18,M_AGE<=45) %>%
+  summarize(Divorced = mean(DIV),Kids = mean(YBIRTH<=YEAR),FT = mean(M_hrs>1750,na.rm = TRUE),PT = mean(M_hrs>0 & M_hrs<1750,na.rm = TRUE),DivKids = mean(DIV & YBIRTH<=YEAR)) %>%
+  pivot_longer(-c("M_AGE","edW"))
 
-P %>%
-  filter(M_AGE==18) %>%
-  summarize(mean(YEAR>=YBIRTH))
-
+lc_moms %>%
+  ggplot(aes(x=M_AGE,y=value,color=as.factor(edW))) + geom_point() + geom_line() + facet_wrap(. ~ name)
 
 ```
 
