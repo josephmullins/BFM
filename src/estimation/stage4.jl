@@ -3,7 +3,7 @@ function data_moms(M,P)
     m0 = @chain P begin
         @subset .!ismissing.(:M_hrs)
         groupby(:DIV)
-        @combine :PT = mean((:M_hrs.>1000) .& (:M_hrs.<2000)) :FT = mean(skipmissing(:M_hrs.>=2000))
+        @combine :PT = mean((:M_hrs.>0) .& (:M_hrs.<1500)) :FT = mean(skipmissing(:M_hrs.>=1500))
         stack(_) 
         @orderby :DIV :variable
     end
@@ -43,11 +43,11 @@ function data_moms(M,P)
         stack(_)
     end
     
-    return [m0.value ; m1.value; m2.value; m4.value]
+    return [m0.value ; m1.value; m2.value] #; m4.value]
 end
 
 function model_moms(TD,TF,D,Lsim,edW)
-    moms = zeros(22)
+    moms = zeros(14) # zeros(22)
     moms[1:4] .= (mean(Lsim[.!D].==2), 
             mean(Lsim[.!D].==1), 
             mean(Lsim[D].==2), 
@@ -57,8 +57,8 @@ function model_moms(TD,TF,D,Lsim,edW)
     I = TD.<9998
     moms[11:14] .= (mean((TD[I] .- TF[I]).<x) for x in (0,5,10,15))
     
-    @views moms[15:18] .= (mean(TD[.!edW].<9998), mean(TD[edW].<9998), mean(TD[.!edW].<10), mean(TD[edW].<10))
-    @views moms[19:22] .= (mean(TF[.!edW].<5), mean(TF[edW].<5), mean(TF[.!edW].<10), mean(TF[edW].<10))
+    #@views moms[15:18] .= (mean(TD[.!edW].<9998), mean(TD[edW].<9998), mean(TD[.!edW].<10), mean(TD[edW].<10))
+    #@views moms[19:22] .= (mean(TF[.!edW].<5), mean(TF[edW].<5), mean(TF[.!edW].<10), mean(TF[edW].<10))
      
     return moms
 end
