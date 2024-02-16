@@ -93,7 +93,7 @@ function estimate_blocks(θ,blocks,wght,values,F,moms0,dat,legal)
     for b in blocks
         println("Doing block $bi ...")
         x0 = get_x(θ)[b]
-        r = optimize(x->ssq(update(x,b,θ,F),wght,values,F,moms0,dat,legal),x0,Optim.Options(iterations=50))
+        r = optimize(x->ssq(update(x,b,θ,F),wght,values,F,moms0,dat,legal),x0,Optim.Options(iterations=50,show_trace=true))
         θ = update(r.minimizer,b,θ,F)
         bi += 1
     end

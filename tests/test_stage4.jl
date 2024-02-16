@@ -37,6 +37,18 @@ legal = repeat(L,10)
     α_νH0 = [3.,-0.1],α_νH1 = [7.,0.2])
 
 
+blocks = [
+    [3,4,5,6,7,9,11,12],
+    [5,6,7,9,11,12],
+    [3,4,5,7,11,12],
+    [1,2,3],
+    [5,6,7,8,9,10],
+    [1,3,5,7]
+]
+
+wght = ones(length(moms0))
+θ = estimate_blocks(θ,blocks,wght,V,F,moms0,dat,legal)
+
 #wght = [1.,1.,1.,1.,0.,0.,1.,0.,0.,1.,50.,0.,0.,1.]
 x0 = get_x(θ)
 
@@ -49,5 +61,26 @@ m1 = get_moments(θ,V,F,M,L)
 using Plots
 M1 = reshape(m1,19,5)
 M0 = reshape(moms0,19,5)
-plot!(22:40,M1,layout = (2,3))
+plot(22:40,M1,layout = (2,3))
 plot!(22:40,M0,layout = (2,3))
+
+function check_fit(θ,V,F,M,L,M0)
+    m1 = get_moments(θ,V,F,M,L)
+    M1 = reshape(m1,19,5)
+    plot(22:40,M1,layout = (2,3))
+    plot!(22:40,M0,layout = (2,3))
+end
+
+θ = (;θ...,α_l = 0.01)
+check_fit(θ,V,F,M,L,M0)
+
+u0,u1,u2,_,_,_ = IU3(θ,1,1,25,25,1,1,1)
+work_probs((u1-u0,u2-u0))
+# mod = (;θ,values=V,F)
+# solve_all!(mod)
+# TD,TF,L_sim, _, _ = data_gen(mod,M,L)
+(; α_C, α_l, γ_YH, γ_YW, αΓ_τWa, αΓ_τHa) = θ
+
+
+logY_H = γ_YH[1,1] + γ_YH[1,2]*25 + γ_YH[1,3]*25^2 + 0. + log(40)
+logY_W = γ_YW[1,1] + γ_YW[1,2]*1 + γ_YW[1,3]*1^2 + log(40) # N_t x N_κ
