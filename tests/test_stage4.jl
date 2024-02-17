@@ -35,7 +35,7 @@ legal = repeat(L,10)
 
 θ = (;θ...,
     σ_L = 2., α_l = 1.,
-    α_F = -2.,σ_F = 10.,
+    α_νd = 0.,σ_F = 10.,
     α_ω = [0., 5.],σ_ω = 3., # σ_ω = 2.
     π_ω = 0.7, Π_ω = transmat_ω(0.7,F.N_ω),
     α_νH0 = [3.,-0.1],α_νH1 = [7.,0.2])
@@ -44,6 +44,16 @@ legal = repeat(L,10)
 #wght = [1.,1.,1.,1.,0.,0.,1.,0.,0.,1.,50.,0.,0.,1.]
 x0 = get_x(θ)
 
+
+wght = [[1.,0.,1.,0.];ones(10)]
+
+res1 = optimize(x->ssq(update(x,θ,F),wght,V,F,moms0,dat,legal),x0,Optim.Options(iterations=200,show_trace=true))
+θ = update(res1.minimizer,θ,F)
+m1 = get_moments(θ,V,F,dat,legal)
+display([moms0 m1])
+
+
+break
 
 # blocks = [
 #     [5,6,7,9,11,12],

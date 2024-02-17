@@ -28,27 +28,27 @@ end
 
 # utility function
 function IUW4(θ,F,edW,edH,AW,κ,AH,ϵH,AK)
-    (; α_C, α_l, γ_YW, γ_YH, αΓ_τWa, αΓ_τHa) = θ
+    (; α_νd, α_C, α_l, γ_YW, γ_YH, αΓ_τWa, αΓ_τHa) = θ
     (; π_H) = F
 
     # Income
     logY_W = γ_YW[edW,1] + γ_YW[edW,2]*κ + γ_YW[edW,3]*κ^2 # N_t x N_κ
     logY_H = γ_YH[edH,1] + γ_YH[edH,2]*AH + γ_YH[edH,3]*AH^2 + ϵH + log(40)
 
-    U0 =  α_C*(log(π_H) + logY_H) + α_l * (1 + αΓ_τWa[AK+1])*log(112) + αΓ_τHa[AK+1]*log(72)
-    U1 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*20) + α_l * (1 + αΓ_τWa[AK+1])*log(92)
-    U2 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*40) + α_l * (1 + αΓ_τWa[AK+1])*log(72)
+    U0 =  α_C*(log(π_H) + logY_H) + α_l * (1 + αΓ_τWa[AK+1])*log(112) + αΓ_τHa[AK+1]*log(72) + α_νd
+    U1 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*20) + α_l * (1 + αΓ_τWa[AK+1])*log(92) + α_νd
+    U2 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*40) + α_l * (1 + αΓ_τWa[AK+1])*log(72) + α_νd
     return (U0,U1,U2)
 end
 
 function IUH4(θ,F,edH,AH,ϵH,AK)
-    (; α_C, α_l, γ_YH, αΓ_τWa, αΓ_τHa) = θ
+    (; α_νd, α_C, α_l, γ_YH, αΓ_τWa, αΓ_τHa) = θ
     (;π_H) = F
 
     # Income
     logY_H = γ_YH[edH,1] + γ_YH[edH,2]*AH + γ_YH[edH,3]*AH^2 + ϵH + log(40)
 
-    U = α_C*(log(1-π_H) + logY_H) + α_l * (1 + αΓ_τHa[AK+1])*log(72)
+    U = α_C*(log(1-π_H) + logY_H) + α_l * (1 + αΓ_τHa[AK+1])*log(72) + α_νd
     U0 = U + α_l * αΓ_τWa[AK+1]*log(112)
     U1 = U + α_l * αΓ_τWa[AK+1]*log(92)
     U2 = U + α_l * αΓ_τWa[AK+1]*log(72)

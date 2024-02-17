@@ -332,7 +332,7 @@ end
 # ------ Stage 1 ----- #
 function iterate1!(mod,t)
     (;θ,F,values) = mod
-    (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, σ_F,α_F) = θ
+    (;σ_L, σ_ω, Π_ϵ, Π_ω, Λ_ϵ, σ_F) = θ
     (;N_ϵ, N_ω, ω_grid, κ_W_grid, β,A_W,A_d,N_d,T_f) = F
     (;VW1,VH1,VW2,VH2,VW3,VH3,pL1,pD1,pF,VW5,VH5) = values
 
@@ -395,8 +395,8 @@ function iterate1!(mod,t)
 
             # ------ Fertility Decision
             # continuation values for having a kid
-            vwF = VW2[κi,1,i,t] + α_F
-            vhF = VH2[κi,1,i,t] + α_F
+            vwF = VW2[κi,1,i,t] 
+            vhF = VH2[κi,1,i,t]
 
             VW,VH,pF[κi,i,t] = bilateral_decision(VW,vwF,VH,vhF,σ_F)
 

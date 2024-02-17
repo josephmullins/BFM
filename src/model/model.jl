@@ -55,13 +55,13 @@ function Params(F)
     # Residual terms coming from child skill production coefficients: ν_0 + ν_1 * ω
     α_νH0 = fill(0.3,2) ,  # Assume α_kH * ν_0 = α_νH0[1] + α_νH0[2]*a & α_kS * ν_0 = (α_kW/α_kH) * (α_νH0[1] + α_νH0[2]*a)
     α_νH1 = fill(0.3,2) , # Assume α_kH * ν_1 = α_νH1[1] + α_νH1[2]*a & α_kS * ν_1 = (α_kW/α_kH) * (α_νH1[1] + α_νH1[2]*a)
+    α_νd = 0.,
     α_τ = 5. , # First term in one-time payoff of custody decision
     π_lc = [0.13, 0.29] ,
 
     Cτ = fill(0.5,A_bar) ,
     ρ = 0.7   ,    # Additional marginal time cost of investing in the child.
     σ_τ = 1.   ,   # Scale parameter of the custody shock, ϵ_τ ∼ Gumbel(0,σ_τ)
-    α_F = 120. ,
     σ_F = 2.    ,  # Scale parameter of the fertility shock, ϵ_F ∼ Gumbel(0,σ_F)
     Λ_ϵ = Λ, 
     Π_ϵ = Π, 
