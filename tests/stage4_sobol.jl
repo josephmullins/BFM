@@ -1,9 +1,6 @@
 include("../src/model/model.jl")
 include("../src/estimation/estimation.jl")
 
-## RUN THIS AGAIN WITH A THE UPPER BOUND FIXED!!
-## SEND THIS TO THE CLUSTER
-
 M = CSV.read("data/MarriageFile.csv",DataFrame,missingstring="NA")
 P = CSV.read("data/MarriagePanel.csv",DataFrame,missingstring="NA")
 K = CSV.read("data/KidPanel.csv",DataFrame,missingstring="NA")
@@ -44,24 +41,23 @@ for n in 1:N
     println(n," ",Qsave[n])
 end
 
-# try just running from the beginning
-x0 = Xsave[:,argmin(Qsave)]
-res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat,legal),x0,Optim.Options(iterations=200,show_trace=true))
-θ = update(res1.minimizer,θ,F)
-m1 = get_moments(θ,V,F,dat,legal)
-display([moms0 m1])
-
-
-# then do a new search within the bounds defined by the 10 best above.
-# - double check and see if it improves
+using DelimitedFiles
 ii = sortperm(Qsave)[1:10]
 X = Xsave[:,ii]
+writedlm("output/Xsave_round1",X)
+writedlm("output/Qsave_round1",Qsave[ii])
+
+# x0 = Xsave[:,argmin(Qsave)]
+# res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat,legal),x0,Optim.Options(iterations=200,show_trace=true))
+# θ = update(res1.minimizer,θ,F)
+# m1 = get_moments(θ,V,F,dat,legal)
+# display([moms0 m1])
 
 x_lb = [minimum(X[i,:]) for i in axes(X,1)]
 x_ub = [maximum(X[i,:]) for i in axes(X,1)]
 
 s = SobolSeq(12)
-N = 1000
+N = 10_000
 
 Qsave2 = zeros(N)
 Xsave2 = zeros(12,N)
@@ -72,3 +68,8 @@ for n in 1:N
     Qsave2[n] = ssq(update(x,θ,F),V,F,moms0,dat,legal)
     println(n," ",Qsave[n])
 end
+
+ii = sortperm(Qsave2)[1:10]
+X = Xsave2[:,ii]
+writedlm("output/Xsave_round2",X)
+writedlm("output/Qsave_round2",Qsave2[ii])
