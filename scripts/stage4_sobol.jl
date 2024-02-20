@@ -29,7 +29,7 @@ x_ub = get_x(θ_ub)
 using Sobol, DelimitedFiles
 s = SobolSeq(12)
 
-function sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N=10_000)
+function sobol_search(x_lb,x_ub,mod,moms0,dat;N=10_000)
     (;θ,values,F) = mod
     Qsave = zeros(N)
     Xsave = zeros(12,N)
@@ -37,7 +37,7 @@ function sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N=10_000)
         u = next!(s)
         x = x_lb .+ u .* (x_ub .- x_lb)
         Xsave[:,n] .= x
-        Qsave[n] = ssq(update(x,θ,F),values,F,moms0,dat,legal)
+        Qsave[n] = ssq(update(x,θ,F),values,F,moms0,dat)
         println(n," ",Qsave[n])
     end
     ii = sortperm(Qsave)[1:10]
@@ -45,7 +45,7 @@ function sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N=10_000)
     return X,Qsave[ii]
 end
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat)
 
 writedlm("output/Xsave_round1",X)
 writedlm("output/Qsave_round1",Q)
@@ -59,7 +59,7 @@ writedlm("output/Qsave_round1",Q)
 x_lb = [minimum(X[i,:]) for i in axes(X,1)]
 x_ub = [maximum(X[i,:]) for i in axes(X,1)]
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat)
 
 writedlm("output/Xsave_round2",X)
 writedlm("output/Qsave_round2",Q)
