@@ -96,15 +96,15 @@ function update(x,ii,θ,F)
 end
 
 # let's fix these?
-function get_moments(θ,values,F,dat,legal)
+function get_moments(θ,values,F,dat)
     mod = (;θ,values,F)
     solve_all!(mod)
-    TD,TF,L_sim, Ω_sim, D = data_gen(mod,dat,legal)
+    TD,TF,L_sim, _, D = data_gen(mod,dat)
     return model_moms(TD,TF,D,L_sim,dat.edW.==1)
 end
 
-function ssq(θ,values,F,moms0,dat,legal)
-    moms1 = get_moments(θ,values,F,dat,legal)
+function ssq(θ,values,F,moms0,dat)
+    moms1 = get_moments(θ,values,F,dat)
     ssq_ = sum((moms1 .- moms0).^2)
     if isnan(ssq_)
         #println(Inf)
@@ -115,8 +115,8 @@ function ssq(θ,values,F,moms0,dat,legal)
     end
 end
 
-function ssq(θ,wght,values,F,moms0,dat,legal)
-    moms1 = get_moments(θ,values,F,dat,legal)
+function ssq(θ,wght,values,F,moms0,dat)
+    moms1 = get_moments(θ,values,F,dat)
     ssq_ = sum(wght .* (moms1 .- moms0).^2)
     if isnan(ssq_)
         #println(Inf)
@@ -127,12 +127,12 @@ function ssq(θ,wght,values,F,moms0,dat,legal)
     end
 end
 
-function estimate_blocks(θ,blocks,wght,values,F,moms0,dat,legal)
+function estimate_blocks(θ,blocks,wght,values,F,moms0,dat)
     bi = 1
     for b in blocks
         println("Doing block $bi ...")
         x0 = get_x(θ)[b]
-        r = optimize(x->ssq(update(x,b,θ,F),wght,values,F,moms0,dat,legal),x0,Optim.Options(iterations=50))
+        r = optimize(x->ssq(update(x,b,θ,F),wght,values,F,moms0,dat),x0,Optim.Options(iterations=50))
         θ = update(r.minimizer,b,θ,F)
         bi += 1
     end
