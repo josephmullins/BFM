@@ -49,7 +49,7 @@ function sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N=10_000)
     return X,Qsave[ii]
 end
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N = 10)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal)
 
 writedlm("output/Xsave_round1",X)
 writedlm("output/Qsave_round1",Q)
@@ -63,7 +63,7 @@ writedlm("output/Qsave_round1",Q)
 x_lb = [minimum(X[i,:]) for i in axes(X,1)]
 x_ub = [maximum(X[i,:]) for i in axes(X,1)]
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal;N = 10)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat,legal)
 
 writedlm("output/Xsave_round2",X)
 writedlm("output/Qsave_round2",Q)

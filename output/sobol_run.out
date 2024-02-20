@@ -1,2 +1,0 @@
-/var/spool/slurmd/job161607397/slurm_script: line 11: 1010103 Killed                  ~/julia-1.9.3/bin/julia -t 10 scripts/stage4_sobol.jl
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=161607397.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.
