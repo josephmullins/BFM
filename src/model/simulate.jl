@@ -8,6 +8,7 @@ function draw_L(u,p1,p2)
     end
 end
 
+# TODO: break this up into functions to diagnose the issue
 function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
     (;values,θ,F) = mod
     (;Π_ϵ,Π_ω) = θ
