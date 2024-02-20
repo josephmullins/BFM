@@ -169,3 +169,54 @@ function data_gen(mod,dat;seed=1234)
     end
     return TD,TF,L_sim, Ω_sim, D
 end
+
+# a function to extract the child sample
+function prep_child_data(sim_data,dat)
+    (_,TF,L_sim,Ω_sim,D) = sim_data
+    AK = Int64[]
+    ΩK = Int64[]
+    DK = Int64[]
+    LK = Int64[]
+    TL = Int64[]
+    nt = 1
+    for n in eachindex(TF)
+        maxT = dat.tlength[n]
+        if TF[n]<9988
+            t0 = nt+TF[n]
+            t1 = min(t0+17,nt+maxT-1)
+            tlength = min(18,t1-t0+1)
+            ak = collect(0:(t1-t0))
+            # now push the relevant data to the new vectors
+            push!(TL,tlength)
+            push!(AK,ak...)
+            push!(ΩK,Ω_sim[t0:t1]...)
+            push!(DK,D[t0:t1]...)
+            push!(LK,L_sim[t0:t1]...)
+        end
+        nt += maxT
+    end
+    return (;AK,DK,LK,TL,ΩK)
+end
+
+
+# a function to predict child outcomes (what's the initial condition?)
+function predict_k!(TH,θk,sim_data;seed=20240220)
+    (;AK,DK,LK,TL,ΩK) = sim_data
+    nt = 1
+    for n in eachindex(TL)
+        k = γ_ψ0
+        for t in 1:TL[n]    
+            nonmarket_time = 112 - L_sim[nt]*40
+            
+            if DK[nt]
+                ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
+            else
+                ψ = γ_ψ[2] + γ_ψ[3]*ω_grid[ω] + γ_ψ*AK[nt]
+            end
+        end
+    end
+end
+
+# a function to calculate moments (easy but let's check)
+
+# a function to calculate the
