@@ -24,7 +24,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
 
     πω = [Categorical(Π_ω[ωi,:]) for ωi=1:N_ω]
     πω0 = Categorical(fill(1/N_ω,N_ω))
-    N = length(dat.edW)
+    N = size(dat,1)
     TD = zeros(Int64,N)
     TF = zeros(Int64,N)
     NT = size(legal,1)
@@ -40,13 +40,12 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
         AW0 = max(dat.YMAR[n]-dat.YBIRTH_M[n],18)
         maxT = dat.tlength[n]
         κ = dat.exp0[n]
-        #ωt = N_ω #<- everyone starts at the highest draw
-        ωt = rand(πω0) #<- try this also
-        ϵt = rand(πϵ_init) #<- TODO: we need to make this a draw from the steady state
-        #ϵt = rand(πϵ[3]) # a random draw of ϵt given ϵ(t-1)=0
+        #ωt = N_ω #<- everyone starts at the highest draw (an alternative assumption)
+        ωt = rand(πω0) 
+        ϵt = rand(πϵ_init) 
         tM = 1
-        tF = 9999
-        tD = 9999
+        ttF = 9999
+        ttD = 9999
         stage = 1
         AK = -1
         for t in 1:maxT
@@ -61,12 +60,12 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                 if rand()<pF[tt](κ,i)
                     stage=2
                     AK = 0
-                    tF = t
+                    ttF = t
                 else
                     pD = pD1[tt](κ,i)
                     if rand()<pD
                         stage=5
-                        tD = t
+                        ttD = t
                     else
                         p1 = pL1[tt](1,κ,i)
                         p2 = pL1[tt](2,κ,i)
@@ -81,7 +80,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                 pD = pD2[tt](κ,AK,i)
                 if rand()<pD
                     stage=4
-                    tD = t
+                    ttD = t
                 else
                     p1 = pL2[tt](1,κ,AK,i)
                     p2 = pL2[tt](2,κ,AK,i)
@@ -97,7 +96,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                 pD = pD3[tt](κ,i)
                 if rand()<pD
                     stage=5
-                    tD = t
+                    ttD = t
                 else
                     p1 = pL3[tt](1,κ,i)
                     p2 = pL3[tt](2,κ,i)
@@ -150,8 +149,8 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
             ωt = rand(πω[ωt])
             nt += 1
         end
-        TD[n] = tD-1
-        TF[n] = tF-1
+        TD[n] = ttD-1
+        TF[n] = ttF-1
         #println(tF," ",tD)
     end
     return TD,TF,L_sim, Ω_sim, D

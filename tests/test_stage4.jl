@@ -15,23 +15,12 @@ V = values(F);
 θ = stage2(θ,K)
 θ = stage3(θ,K,F.τgrid,cprobs)
 
-# model_moms(TD,TF,D,L_sim)
-# have to re-pack this model each time. I don't like that. Change the arguments?
-# mod = (;F,θ,values=V);
-# solve_all!(mod)
-# model_moms(TD,TF,D,L_sim)
 L = convert(Vector{Int64},P.L)
 moms0 = data_moms(M,P)
 
 dat = repeat(M,10)
 legal = repeat(L,10)
 
-# θ = (;θ...,
-#     σ_L = 2., α_l = 1.,
-#     α_F = 2.,σ_F = 10.,
-#     α_ω = [1., 5.],σ_ω = 4., # σ_ω = 2.
-#     π_ω = 0.9, Π_ω = transmat_ω(0.9,F.N_ω),
-#     α_νH0 = [3.,0.],α_νH1 = [4.,0.1])
 
 θ = (;θ...,
     σ_L = 2., α_l = 1.,
@@ -41,8 +30,12 @@ legal = repeat(L,10)
     α_νH0 = [3.,-0.1],α_νH1 = [7.,0.2])
 
 
-#wght = [1.,1.,1.,1.,0.,0.,1.,0.,0.,1.,50.,0.,0.,1.]
 x0 = get_x(θ)
+mod = (;θ,values=V,F)
+data_gen(mod,dat,legal);
+@time data_gen(mod,dat,legal)
+
+break
 
 
 wght = [[1.,0.,1.,0.];ones(10)]
