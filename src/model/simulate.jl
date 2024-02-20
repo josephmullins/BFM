@@ -8,8 +8,23 @@ function draw_L(u,p1,p2)
     end
 end
 
+# this function takes data from the dataframe and wraps it as an immutable tuple, repeating it R times where R is the number of simulations per observation
+# - this supports type stability and avoids unnecessary allocations
+function prep_sim_data(dat,panel;R = 1)
+    dat = repeat(dat,R)
+    legal = repeat(panel.L,R)
+
+    (;edW = 1 .+ dat.edW,
+    edH = 1 .+ dat.edH,
+    tlength = dat.tlength,
+    AW0 = max.(dat.YMAR .- dat.YBIRTH_M,18),
+    AD = dat.YBIRTH_M .- dat.YBIRTH_F,
+    κ = dat.exp0,
+    legal)
+end
+
 # TODO: break this up into functions to diagnose the issue
-function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
+function data_gen(mod,dat;seed=1234)
     (;values,θ,F) = mod
     (;Π_ϵ,Π_ω) = θ
     (;N_ϵ,N_t,N_ω,A_bar,N_d,T_f) = F
@@ -25,22 +40,22 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
 
     πω = [Categorical(Π_ω[ωi,:]) for ωi=1:N_ω]
     πω0 = Categorical(fill(1/N_ω,N_ω))
-    N = size(dat,1)
+    N = size(dat.edW,1)
     TD = zeros(Int64,N)
     TF = zeros(Int64,N)
-    NT = size(legal,1)
+    NT = length(dat.legal)
     L_sim = zeros(NT)
     Ω_sim = zeros(NT)
     D = zeros(Bool,NT)
     nt = 1
     for n in 1:N
-        eW = 1+dat.edW[n]
-        eH = 1+dat.edW[n]
-        ad = dat.YBIRTH_M[n] - dat.YBIRTH_F[n]
+        eW = dat.edW[n]
+        eH = dat.edW[n]
+        ad = dat.AD[n]
         adi = 1 + (ad>-5) + (ad>5)
-        AW0 = max(dat.YMAR[n]-dat.YBIRTH_M[n],18)
+        aw0 = dat.AW0[n]
         maxT = dat.tlength[n]
-        κ = dat.exp0[n]
+        κ = dat.κ[n]
         #ωt = N_ω #<- everyone starts at the highest draw (an alternative assumption)
         ωt = rand(πω0) 
         ϵt = rand(πϵ_init) 
@@ -50,9 +65,9 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
         stage = 1
         AK = -1
         for t in 1:maxT
-            l = legal[nt]
+            l = dat.legal[nt]
             Ω_sim[nt] = ωt
-            tt = AW0+t-18
+            tt = aw0+t-18
             #println(n," ",stage," ",tt)
             if stage==1
                 # birth decisions
@@ -72,7 +87,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                         p2 = pL1[tt](2,κ,i)
                         L = draw_L(rand(),p1,p2)
                         L_sim[nt] = L
-                        κ = κ + L==2
+                        κ += L==2
                     end
                 end
             end
@@ -89,7 +104,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                     L_sim[nt] = L
                     
                 
-                    κ = κ + L==2
+                    κ += L==2
                 end
             end
             if stage==3
@@ -105,17 +120,15 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                     L_sim[nt] = L
                     
                 
-                    κ = κ + L==2
+                    κ += L==2
                 end
             end
             if stage==4
                 p1 = pL4[tt](1,eW,eH,ad,ϵt,κ,AK)
                 p2 = pL4[tt](2,eW,eH,ad,ϵt,κ,AK)
                 L = draw_L(rand(),p1,p2)
-                L_sim[nt] = L
-                
-            
-                κ = κ + L==2
+                L_sim[nt] = L                
+                κ += L==2
             end
             if stage==5
                 p1 = pL5[tt](1,eW,κ)
@@ -124,7 +137,7 @@ function data_gen(mod,dat,legal::Vector{Int64};seed=1234)
                 L_sim[nt] = L
                 
             
-                κ = κ + L==2
+                κ += L==2
             end
             # final updates on stages
             if (stage==1) & (tt==T_f-1)
