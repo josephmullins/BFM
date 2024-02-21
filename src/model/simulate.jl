@@ -172,14 +172,15 @@ end
 
 # a function to extract the child sample
 function prep_child_data(sim_data,dat,cprobs;seed=131332)
-    (_,TF,L_sim,Ω_sim,D) = sim_data
+    (TD,TF,L_sim,Ω_sim,D) = sim_data
     Random.seed!(seed)
     AK = Int64[]
     ΩK = Int64[]
-    DK = Int64[]
+    DK = Bool[]
     LK = Int64[]
     TL = Int64[]
     Csim = Int64[]
+    G = Int64[] #<- will indicate one of three groups: (1) never divorced, (2) will divorce, (3) divorced
     nt = 1
     cdist = Categorical(cprobs)
     for n in eachindex(TF)
@@ -200,34 +201,58 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
             else
                 push!(Csim,0)
             end
+            if TD[n]<9998
+                g = 2 .+ ( ak .>= (TD[n]-TF[n]) ) #<- latter part true only if divorced by age a
+                push!(G,g...)
+            else
+                push!(G,fill(1,tlength)...)
+            end
         end
         nt += maxT
     end
-    return (;AK,DK,LK,TL,ΩK,Csim)
+    return (;AK,DK,LK,TL,ΩK,Csim,G)
 end
 
 
 # a function to predict child outcomes (what's the initial condition?)
-function predict_k!(TH,θk,θ,sim_data;seed=20240220)
-    (;AK,DK,LK,TL,ΩK) = sim_data
-    (;αΓ_τWa,αΓ_τHa) = θ
+# are these moments sufficient to identify the factor shares for time?
+# - I think not?
+# - it all has to come through mother's labor supply and.. what? divorce penalties?
+# maybe just see how we go
+function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
+    Random.seed!(seed)
+    (;δW,δH,δk,γ_ψ0,γ_ψ) = θk
+    (;τgrid,ω_grid) = F
+    (;AK,DK,LK,TL,ΩK,Csim) = sim_data
+    (;αΓ_τWa,αΓ_τHa,ρ) = θ
     nt = 1
     ϕW = αΓ_τWa ./ (1 .+ αΓ_τWa)
-    ϕH = αΓ_τWa ./ (1 .+ αΓ_τWa)
+    ϕH = αΓ_τHa ./ (1 .+ αΓ_τHa)
     for n in eachindex(TL)
-        k = γ_ψ0
-        for t in 1:TL[n]    
-            nonmarket_time = 112 - L_sim[nt]*40
-            τW = ϕH[]
+        logk = γ_ψ0
+        for t in 1:TL[n]
+            ai = AK[nt]+1 
+            ωi = ΩK[nt]
+            nonmarket_time = 112 - LK[nt]*40
+            τW = ϕW[ai] * nonmarket_time
+            τH = ϕH[ai] * 72
+            logk  = δH[ai]*log(τH) + δW[ai] * log(τW) + δk * logk
             if DK[nt]
                 ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
+                ci = Csim[n]
+                time_penalty =  -log(1 + ρ * (1-τgrid[ci]))
             else
-                ψ = γ_ψ[2] + γ_ψ[3]*ω_grid[ω] + γ_ψ*AK[nt]
+                ψ = γ_ψ[2] + γ_ψ[3]*ω_grid[ωi] + γ_ψ[4]*AK[nt]
+                time_penalty = 0.
             end
+            logk += ψ + time_penalty
+            p = exp(logk) / (1 + exp(logk))
+            score[nt] = rand(Binomial(58,p))
+            nt += 1
         end
     end
 end
 
 # a function to calculate moments (easy but let's check)
-
+# for now, let's just match by the three categories: divorced, will divorce, never divorced.
 # a function to calculate the
