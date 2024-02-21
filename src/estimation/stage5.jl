@@ -10,3 +10,10 @@ function kidmoms_data(d) #<-?
     return m
 end
 
+
+# TODO:
+# finish and test code to calculate test score moments in data (above)
+# write code to update function with age profiles
+# write code to fetch the simulated moments
+# write code to get the objective
+# write code to minimize and see if it's enough
