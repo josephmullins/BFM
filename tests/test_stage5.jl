@@ -41,7 +41,6 @@ S = zeros(length(kid_data.ΩK))
     δW = fill(0.1,18),δH = fill(0.1,18),δk = 0.9,
     Γa = zeros(19))
 
-x0 = [-5.,0.,0.,0.2,0.,1.,log(0.4)]
 θk =  updateθk(x0,θk,θ)
 
 # the data moments:
@@ -52,9 +51,10 @@ wght = ones(41)
 wght[40:41] .= 1000.
 # we can do the same thing for the data easily enough
 obj_stage5(S,θk,θ,F,kid_data,kmoms0,wght)
+x0 = [-10.,0.,0.,0.2,0.,1.,log(0.2)]
 
 x0 = [-7.5,0.,0.,0.05,0.00,2.5,log(0.2)]
-
+x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2)]
 res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0,wght),x0,Optim.Options(show_trace = true))
 θk =  updateθk(res.minimizer,θk,θ)
 
@@ -78,7 +78,7 @@ end
 p
 
 
-x0 = [-7.5,0.,0.,0.05,0.00,2.5,log(0.2)]
+x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2)]
 θk =  updateθk(x0,θk,θ)
 kmoms1 = kid_moments(S,θk,θ,F,kid_data)
 
