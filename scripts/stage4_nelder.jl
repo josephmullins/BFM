@@ -27,6 +27,8 @@ X0 = readdlm("output/Xsave_round2")
 # this produces the best outcome from all the guesses
 res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat),X0[:,1],Optim.Options(iterations=1000,show_trace=true))
 
+writedlm("output/stage4",res1.minimizer)
+
 θ = update(res1.minimizer,θ,F)
 m1 = get_moments(θ,V,F,dat)
 display([moms0 m1])

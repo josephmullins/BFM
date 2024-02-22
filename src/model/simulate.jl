@@ -247,7 +247,7 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
             if DK[nt]
                 ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
                 ci = Csim[n]
-                time_penalty =  -log(1 + ρ * (1-τgrid[ci]))
+                time_penalty =  -δH[ai] * log(1 + ρ * (1-τgrid[ci]))
             else
                 ψ = γ_ψ[2] + γ_ψ[3]*ω_grid[ωi] + γ_ψ[4]*AK[nt]
                 time_penalty = 0.

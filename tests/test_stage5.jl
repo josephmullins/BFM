@@ -32,35 +32,6 @@ mod = (;θ,values=V,F);
 
 solve_all!(mod)
 sim_data = data_gen(mod,dat);
-TD = sim_data[1];
-L_sim = sim_data[3];
-Ω_sim = sim_data[4];
-tsd = Int64[]
-for n in eachindex(TD)
-    tlength = dat.tlength[n]
-    for t in 1:tlength
-        push!(tsd,t-1-TD[n])
-    end
-end
-
-pt = [mean(L_sim[tsd.==x].==1) for x in -6:10]
-ft = [mean(L_sim[tsd.==x].==2) for x in -6:10]
-L = [mean(L_sim[tsd.==x].>0) for x in -6:10]
-plot(-6:10,ft)
-plot!(-6:10,pt)
-plot!(-6:10,L)
-
-ft = [mean(L_sim[Ω_sim.==x].==2) for x in 1:5]
-pt = [mean(L_sim[Ω_sim.==x].==1) for x in 1:5]
-plot(1:5,ft)
-
-plot(-6:0,[mean(Ω_sim[tsd.==x].==g) for x in -6:0, g in 1:5])
-plot(-6:0,[mean(Ω_sim[tsd.==x]) for x in -6:0])
-plot(-10:10,[mean(L_sim[tsd.==x].==g) for x in -10:10, g in 1:2])
-
-idx = LinearIndices((N_ϵ,N_ω,N_d,2,2,2))
-pL1,pL2,pL3,pL4,pL5,pD1,pD2,pD3,pF = interpolate_probs(V,F);
-
 
 kid_data = prep_child_data(sim_data,dat,cprobs);
 
@@ -82,11 +53,14 @@ wght[40:41] .= 1000.
 # we can do the same thing for the data easily enough
 obj_stage5(S,θk,θ,F,kid_data,kmoms0,wght)
 
+x0 = [-7.5,0.,0.,0.05,0.00,2.5,log(0.2)]
+
 res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0,wght),x0,Optim.Options(show_trace = true))
+θk =  updateθk(res.minimizer,θk,θ)
 
-
-
-
+inputs,mstat = input_decomposition(θk,θ,F,kid_data)
+mean(inputs,dims=2)
+[mean(inputs[:,mstat.==0],dims=2) mean(inputs[:,mstat.==1],dims=2)]
 
 # ---- a cheeky plot to show what's what
 θk = updateθk(res.minimizer,θk,θ)
@@ -104,7 +78,7 @@ end
 p
 
 
-x0 = [-7.5,0.3,0.,0.05,0.00,2.5,log(0.2)]
+x0 = [-7.5,0.,0.,0.05,0.00,2.5,log(0.2)]
 θk =  updateθk(x0,θk,θ)
 kmoms1 = kid_moments(S,θk,θ,F,kid_data)
 
@@ -119,35 +93,16 @@ end
 p
 
 
-m = @chain K begin
-    @subset :AGE.<=15
-    @subset :AGE.>=3
-    #@transform :AGE = round.(:AGE ./ 4)
-    groupby([:dgroup,:AGE])
-    @combine :S = mean(skipmissing(:AP_std))
-end
-plot(reshape(m.S,13,3))
-
-m = @chain K begin
-    @subset :AGE.<=15
-    @subset :AGE.>=3
-    @select :AGE :dgroup :AP_raw
-    dropmissing()
-    groupby(:AGE)
-    @transform :S = (:AP_raw .- mean(:AP_raw)) ./ std(:AP_raw)
-    @transform :AGE = round.(:AGE ./ 4)
-    groupby([:dgroup,:AGE])
-    @combine :S = mean(skipmissing(:S))
-end
-plot(reshape(m.S,4,3))
-plot(reshape(m.S,13,3))
-
-m = @chain K begin
-    @subset :AGE.<=15
-    @subset :AGE.>=3
-    @select :AGE :dgroup :LW_raw
-    @transform :AGE = round.(:AGE ./ 4)
-    groupby([:dgroup,:AGE])
-    @combine :S = mean(skipmissing(:S))
-end
-plot(reshape(m.S,4,3))
+## take a look at labor supply before divorce
+# TD = sim_data[1];
+# L_sim = sim_data[3];
+# Ω_sim = sim_data[4];
+# D = sim_data[5]
+# tsd = Int64[]
+# for n in eachindex(TD)
+#     tlength = dat.tlength[n]
+#     for t in 1:tlength
+#         push!(tsd,t-1-TD[n])
+#     end
+# end
+# plot(-5:10,[mean(L_sim[tsd.==x].==g) for x in -5:10, g in 1:2])

@@ -83,3 +83,43 @@ end
 # so:
 # δ_{s,a+1} = δ_{s,a} * Γ_{s,a+1} * Γ_{a+1} / (Γ_{s,a} * Γ_{a+2})
 # Γ_{a+1} / Γ_{a+2} = (1 + β * δ_{k} * Γ_{a+2}) / Γ_{a+2}
+
+function input_decomposition(θk,θ,F,sim_data;seed=20240220)
+    Random.seed!(seed)
+    (;δW,δH,δk,γ_ψ0,γ_ψ) = θk
+    (;τgrid,ω_grid) = F
+    (;AK,DK,LK,TL,ΩK,Csim,reg_idx,Y,X,logτ_m) = sim_data
+    (;αΓ_τWa,αΓ_τHa,ρ) = θ
+    nt = 1
+    ϕW = αΓ_τWa ./ (1 .+ αΓ_τWa)
+    ϕH = αΓ_τHa ./ (1 .+ αΓ_τHa)
+    inputs = zeros(3,length(TL))
+    mstat = zeros(length(TL))
+    for n in eachindex(TL)
+        tfp = γ_ψ0
+        mtime = 0.
+        ftime = 0.
+        for t in 1:TL[n]
+            ai = AK[nt]+1 
+            ωi = ΩK[nt]
+            nonmarket_time = 112 - LK[nt]*40
+            τW = ϕW[ai] * nonmarket_time
+            τH = ϕH[ai] * 72
+            if DK[nt]
+                ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
+                ci = Csim[n]
+                time_penalty =  - δH[ai] * log(1 + ρ * (1-τgrid[ci]))
+            else
+                ψ = γ_ψ[2] + γ_ψ[3]*ω_grid[ωi] + γ_ψ[4]*AK[nt]
+                time_penalty = 0.
+            end
+            tfp = ψ + δk*tfp
+            mtime = δW[ai] * log(τW) + δk*mtime
+            ftime = δH[ai]*log(τH) + time_penalty + δk*ftime
+            nt += 1
+        end
+        inputs[:,n] .= (tfp,mtime,ftime)
+        mstat[n] = DK[nt-1] 
+    end
+    return inputs,mstat
+end

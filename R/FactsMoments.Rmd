@@ -127,13 +127,28 @@ P %>%
   select(M_hrs,TSD,M_AGE) %>%
   drop_na() %>%
   mutate(FT = M_hrs>1500) %>%
-  group_by(M_AGE) %>%
-  mutate(FT = FT - mean(FT)) %>%
-  ungroup() %>%
-  filter(TSD>=-8,TSD<=10) %>%
+  # group_by(M_AGE) %>%
+  # mutate(FT = FT - mean(FT)) %>%
+  # ungroup() %>%
+  filter(TSD>=-5,TSD<=10) %>%
   group_by(TSD) %>%
   summarize(sd = sqrt(var(FT)/n()),FT = mean(FT)) %>%
   ggplot(aes(x=TSD,y=FT,ymin=FT-1.96*sd,ymax=FT+1.96*sd)) + geom_line() + geom_point() + geom_errorbar(width=0.)
+```
+
+```{r}
+P %>%
+  select(M_hrs,TSD,M_AGE) %>%
+  drop_na() %>%
+  mutate(PT = M_hrs>0 & M_hrs<=1500) %>%
+  # group_by(M_AGE) %>%
+  # mutate(PT = PT - mean(PT)) %>%
+  # ungroup() %>%
+  filter(TSD>=-5,TSD<=10) %>%
+  group_by(TSD) %>%
+  summarize(sd = sqrt(var(PT)/n()),PT = mean(PT)) %>%
+  ggplot(aes(x=TSD,y=PT,ymin=PT-1.96*sd,ymax=PT+1.96*sd)) + geom_line() + geom_point() + geom_errorbar(width=0.)
+
 ```
 
 
