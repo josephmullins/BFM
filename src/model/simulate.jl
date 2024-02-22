@@ -183,6 +183,8 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
     G = Int64[] #<- will indicate one of three groups: (1) never divorced, (2) will divorce, (3) divorced
     nt = 1
     cdist = Categorical(cprobs)
+    reg_idx = Int64[] #<- saves the row of the regression that each simulated score will go into (0 if not in the regression)
+    ri = 1
     for n in eachindex(TF)
         maxT = dat.tlength[n]
         if TF[n]<9998
@@ -207,23 +209,26 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
             else
                 push!(G,fill(1,tlength)...)
             end
+            # number of eligible periods is tlength-8 (must be at least 8 in the second period)
+            push!(reg_idx,zeros(min(8,tlength))...)
+            rlength = tlength-8
+            push!(reg_idx,ri:(ri+rlength-1)...)
+            ri += rlength
         end
         nt += maxT
     end
-    return (;AK,DK,LK,TL,ΩK,Csim,G)
+    logτ_m = zeros(length(DK))
+    X = ones(ri-1,3) #<- buffer for the regression
+    Y = zeros(ri-1) #<- buffer for the regression
+    return (;AK,DK,LK,TL,ΩK,Csim,G,reg_idx,Y,X,logτ_m)
 end
 
 
-# a function to predict child outcomes (what's the initial condition?)
-# are these moments sufficient to identify the factor shares for time?
-# - I think not?
-# - it all has to come through mother's labor supply and.. what? divorce penalties?
-# maybe just see how we go
 function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
     Random.seed!(seed)
     (;δW,δH,δk,γ_ψ0,γ_ψ) = θk
     (;τgrid,ω_grid) = F
-    (;AK,DK,LK,TL,ΩK,Csim) = sim_data
+    (;AK,DK,LK,TL,ΩK,Csim,reg_idx,Y,X,logτ_m) = sim_data
     (;αΓ_τWa,αΓ_τHa,ρ) = θ
     nt = 1
     ϕW = αΓ_τWa ./ (1 .+ αΓ_τWa)
@@ -232,10 +237,12 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
         logk = γ_ψ0
         for t in 1:TL[n]
             ai = AK[nt]+1 
+            ageK = ai - 1
             ωi = ΩK[nt]
             nonmarket_time = 112 - LK[nt]*40
             τW = ϕW[ai] * nonmarket_time
             τH = ϕH[ai] * 72
+            logτ_m[nt] = log(τW)
             logk  = δH[ai]*log(τH) + δW[ai] * log(τW) + δk * logk
             if DK[nt]
                 ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
@@ -248,6 +255,12 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
             logk += ψ + time_penalty
             p = exp(logk) / (1 + exp(logk))
             score[nt] = rand(Binomial(58,p))
+            ri = reg_idx[nt]
+            if ri>0
+                Y[ri] = score[nt]
+                X[ri,2] = logτ_m[nt-5]
+                X[ri,3] = score[nt-5]
+            end
             nt += 1
         end
     end

@@ -1,7 +1,15 @@
 # add to data frame so we can use a different status variable
-function kidmoms_data(d) #<-?
+function kidmoms_data(d)
+    ma = testscore_averages(d).S
+    k = construct_regression_data(d)
+    mod = lm(@formula(AP_raw ~ log(tau_m) + AP_lag ),k)
+    mb = coef(mod)[2:3]
+    return [ma;mb]
+end
+
+function testscore_averages(d) #<-?
     m = @chain d begin
-        @subset :AGE.<=17
+        @subset :AGE.<=15
         @subset :AGE.>=3
         #@transform :AGE = round.(:AGE ./ 4)
         groupby([:dgroup,:AGE])
@@ -10,24 +18,38 @@ function kidmoms_data(d) #<-?
     return m
 end
 
-# TODO:
-# finish and test code to calculate test score moments in data (above)
-# write code to update function with age profiles
-# write code to fetch the simulated moments
-# write code to get the objective
-# write code to minimize and see if it's enough
-# in data patterns, look at test score moments relative to never divorced group
-
-
-# TODO: fix this!!!
-function kid_moments(S,θk,θ,F,kid_data)
-    predict_k!(S,θk,θ,F,kid_data)
-    return [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 3:17]
+function construct_regression_data(d)
+    # how does the regression look
+    k1 = @chain d begin
+        @subset :YEAR.==1997 .|| :YEAR.==2002
+        @transform :g1 = :dgroup.==1 :g2 = :dgroup.==2
+        select(:YEAR,:KID,:AP_raw,:LW_raw, :tau_m,:tau_f,:g1,:g2)
+        @rename :AP_lag = :AP_raw :LW_lag = :LW_raw
+    end
+    k = @chain d begin
+        @subset :YEAR.==2002 .|| :YEAR.==2007
+        @transform :YEAR = :YEAR .- 5
+        select(:KID,:YEAR,:AP_raw,:LW_raw,:AGE)
+        innerjoin(k1,on=[:KID,:YEAR])
+        @subset :tau_m.>0
+        dropmissing()
+    end
+    return k
 end
 
-function obj_stage5(S,θk,θ,F,kid_data,kmoms0)
+
+function kid_moments(S,θk,θ,F,kid_data)
+    (;Y,X) = kid_data
+    predict_k!(S,θk,θ,F,kid_data)
+    ma = [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 3:15]
+    β = inv(X' * X) * X' * Y
+    mb = β[2:3]
+    return [ma;mb]
+end
+
+function obj_stage5(S,θk,θ,F,kid_data,kmoms0,wght)
     kmoms1 = kid_moments(S,θk,θ,F,kid_data)
-    return sum((kmoms1 .- kmoms0).^2)
+    return sum(wght .* (kmoms1 .- kmoms0).^2)
 end
 
 function updateθk(x,θk,θ)
@@ -38,7 +60,8 @@ function updateθk(x,θk,θ)
     δk = exp(x[6])/(1+exp(x[6]))
     get_Γa!(Γa,δk,β)
     δW[1] = exp(x[7])
-    δH[1] = exp(x[8])
+    δH[1] = δW[1] * αΓ_τHa[1] / αΓ_τWa[1]
+    #δH[1] = exp(x[8])
     for a in eachindex(δW)
         δW[a] = δW[1] * αΓ_τWa[a] * Γa[2] / (αΓ_τWa[1] * Γa[a+1])
         δH[a] = δH[1] * αΓ_τHa[a] * Γa[2] / (αΓ_τHa[1] * Γa[a+1])

@@ -14,9 +14,132 @@ K <- read_csv("../data/KidPanel.csv")
 
 # Facts and Moments from the Data
 
+## Child Development Moments
+
+We separate children into three groups (never divorced, will divorce, and divorced) and calculate average test scores. We'll do this at each age, then also standardized, before creating age groups also.
+
+```{r}
+K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  group_by(dgroup,AGE) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  ggplot(aes(x=AGE,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (raw)")
+```
+
+```{r}
+K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  group_by(AGE) %>%
+  mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
+  group_by(dgroup,AGE) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  ggplot(aes(x=AGE,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (standardized)")
+```
+```{r}
+K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (raw)")
+```
+
+```{r}
+K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  group_by(AGE) %>%
+  mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (raw)")
+
+```
+## Comparison Using Separation instead of Divorce
+```{r}
+m1 <- K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  group_by(AGE) %>%
+  mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  mutate(case="Using Divorce")
+
+m2 <- K %>%
+  select(AGE,AP_raw,sgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(sgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  group_by(AGE) %>%
+  mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  mutate(case="Using Separation")
+
+
+rbind(m1,m2) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (standardized)") + facet_grid(. ~ case)
+
+```
+
+```{r}
+m1 <- K %>%
+  select(AGE,AP_raw,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  mutate(case="Using Divorce")
+
+m2 <- K %>%
+  select(AGE,AP_raw,sgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(sgroup,labels=c("Never Divorced","Will Divorce","Divorced"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(AP_raw),se = sd(AP_raw)/n()) %>%
+  mutate(case="Using Separation")
+
+
+rbind(m1,m2) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (raw)") + facet_grid(. ~ case)
+```
+
+
+## Wife's Labor Supply
+
+Here we look at changes in the wife's labor supply.
+
+```{r}
+P %>%
+  select(M_hrs,TSD,M_AGE) %>%
+  drop_na() %>%
+  mutate(FT = M_hrs>1500) %>%
+  group_by(M_AGE) %>%
+  mutate(FT = FT - mean(FT)) %>%
+  ungroup() %>%
+  filter(TSD>=-8,TSD<=10) %>%
+  group_by(TSD) %>%
+  summarize(sd = sqrt(var(FT)/n()),FT = mean(FT)) %>%
+  ggplot(aes(x=TSD,y=FT,ymin=FT-1.96*sd,ymax=FT+1.96*sd)) + geom_line() + geom_point() + geom_errorbar(width=0.)
+```
+
+
 ## Life-Cycle Moments
 
-NOTE: we have some "outlier" observations, marriages that start wheb the woman is very young. we want to perhaps restrict our observations.
+NOTE: we have some "outlier" observations, marriages that start when the woman is very young. we want to perhaps restrict our observations.
 
 
 ```{r}

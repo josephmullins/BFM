@@ -36,8 +36,8 @@ function IUW4(θ,F,edW,edH,AW,κ,AH,ϵH,AK)
     logY_H = γ_YH[edH,1] + γ_YH[edH,2]*AH + γ_YH[edH,3]*AH^2 + ϵH + log(40)
 
     U0 =  α_C*(log(π_H) + logY_H) + α_l * (1 + αΓ_τWa[AK+1])*log(112) + αΓ_τHa[AK+1]*log(72) + α_νd
-    U1 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*20) + α_l * (1 + αΓ_τWa[AK+1])*log(92) + α_νd
-    U2 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*40) + α_l * (1 + αΓ_τWa[AK+1])*log(72) + α_νd
+    U1 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*20) + α_l * (1 + αΓ_τWa[AK+1])*log(92) + αΓ_τHa[AK+1]*log(72) + α_νd
+    U2 = α_C*log(π_H*exp(logY_H) + exp(logY_W)*40) + α_l * (1 + αΓ_τWa[AK+1])*log(72) + αΓ_τHa[AK+1]*log(72) + α_νd
     return (U0,U1,U2)
 end
 
@@ -66,7 +66,7 @@ function IU3(θ,eW,eH,AW,AH,ϵH,κ,ω)
     uc2 = α_C*log(exp(logY_H) + exp(logY_W)*40)
 
     UW0 = α_C*logY_H + α_l*log(112) + vω
-    UW1 = uc1 + α_l*log(72) + vω
+    UW1 = uc1 + α_l*log(92) + vω
     UW2 = uc2 + α_l*log(72) + vω
 
     UH0 = α_C*logY_H + α_l*log(72) + vω
