@@ -50,13 +50,18 @@ kmoms0 = kidmoms_data(K)
 wght = ones(41)
 wght[40:41] .= 1000.
 # we can do the same thing for the data easily enough
-x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2)]
-res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0,wght),x0,Optim.Options(show_trace = true))
+
+x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2),log(0.2)]
+x0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
+
+res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0),x0,Optim.Options(show_trace = true))
 θk =  updateθk(res.minimizer,θk,θ)
 
 inputs,mstat = input_decomposition(θk,θ,F,kid_data)
 mean(inputs,dims=2)
-[mean(inputs[:,mstat.==0],dims=2) mean(inputs[:,mstat.==1],dims=2)]
+d = [mean(inputs[:,mstat.==0],dims=2) mean(inputs[:,mstat.==1],dims=2)]
+sum(d,dims=1)
+std(sum(inputs,dims=1))
 # CAN USE standard deviations to fit this.
 # but note that we don't match std deviations in test scores, so what am I thinking??
 # begs the question, why no shock to test scores??
@@ -65,31 +70,20 @@ mean(inputs,dims=2)
 θk = updateθk(res.minimizer,θk,θ)
 kmoms1 = kid_moments(S,θk,θ,F,kid_data)
 
-using StatsPlots
-p = plot()
-K0 = reshape(kmoms0[1:end-2],13,3)
-K1 = reshape(kmoms1[1:end-2],13,3)
-clrs = ["blue","red"]
-for i in 2:3
-    plot!(p,K0[:,i] .- K0[:,1],linecolor=clrs[i-1])
-    plot!(p,K1[:,i] .- K1[:,1],linecolor=clrs[i-1],linestyle=:dash)
-end
-p
-
-
-x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2)]
-θk =  updateθk(x0,θk,θ)
-kmoms1 = kid_moments(S,θk,θ,F,kid_data)
-
-p = plot()
-K0 = reshape(kmoms0[1:end-2],13,3)
-K1 = reshape(kmoms1[1:end-2],13,3)
+p = plot(layout = (1,2))
+K0 = reshape(kmoms0[1],13,3)
+K1 = reshape(kmoms1[1],13,3)
 clrs = ["blue","red","purple"]
 for i in 1:3
-    plot!(p,K0[:,i],linecolor=clrs[i])
-    plot!(p,K1[:,i],linecolor=clrs[i],linestyle=:dash)
+    plot!(p,K0[:,i],linecolor=clrs[i],subplot=1)
+    plot!(p,K1[:,i],linecolor=clrs[i],linestyle=:dash,subplot=1)
 end
-p
+
+# SDs
+θk = (;θk...,γAP = 20.)
+plot!(kmoms0[2],linecolor=:blue,subplot=2)
+plot!(kmoms1[2],linecolor=:blue,linestyle=:dash,subplot=2)
+
 
 
 ## take a look at labor supply before divorce

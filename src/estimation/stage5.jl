@@ -1,10 +1,11 @@
 # add to data frame so we can use a different status variable
 function kidmoms_data(d)
     ma = testscore_averages(d).S
+    sa = testscore_sd(d).sd
     k = construct_regression_data(d)
     mod = lm(@formula(AP_raw ~ log(tau_m) + AP_lag ),k)
     mb = coef(mod)[2:3]
-    return [ma;mb]
+    return ma,sa,mb
 end
 
 function testscore_averages(d) #<-?
@@ -17,6 +18,18 @@ function testscore_averages(d) #<-?
     end
     return m
 end
+
+function testscore_sd(d)
+    m = @chain d begin
+        @subset :AGE.<=15
+        @subset :AGE.>=3
+        #@transform :AGE = round.(:AGE ./ 4)
+        groupby(:AGE)
+        @combine :sd = std(skipmissing(:AP_raw))
+    end
+    return m
+end
+
 
 function construct_regression_data(d)
     # how does the regression look
@@ -42,14 +55,16 @@ function kid_moments(S,θk,θ,F,kid_data)
     (;Y,X) = kid_data
     predict_k!(S,θk,θ,F,kid_data)
     ma = [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 3:15]
+    sa = [std(S[kid_data.AK.==a]) for a in 3:15]
     β = inv(X' * X) * X' * Y
     mb = β[2:3]
-    return [ma;mb]
+    return ma,sa,mb
 end
 
-function obj_stage5(S,θk,θ,F,kid_data,kmoms0,wght)
-    kmoms1 = kid_moments(S,θk,θ,F,kid_data)
-    return sum(wght .* (kmoms1 .- kmoms0).^2)
+function obj_stage5(S,θk,θ,F,kid_data,kmoms0)
+    ma0,sa0,mb0 = kmoms0
+    ma1,sa1,mb1 = kid_moments(S,θk,θ,F,kid_data)
+    return sum((ma1 .- ma0).^2) + sum((sa1 .- sa0).^2) + 1000*sum((mb1 .- mb0).^2)
 end
 
 function updateθk(x,θk,θ)
@@ -66,7 +81,9 @@ function updateθk(x,θk,θ)
         δW[a] = δW[1] * αΓ_τWa[a] * Γa[2] / (αΓ_τWa[1] * Γa[a+1])
         δH[a] = δH[1] * αΓ_τHa[a] * Γa[2] / (αΓ_τHa[1] * Γa[a+1])
     end
-    return (;θk...,γ_ψ0,δk)
+    σ_η = exp(x[8])
+    γAP = exp(x[9])
+    return (;θk...,γ_ψ0,δk,σ_η,γAP)
 end
 
 function get_Γa!(Γa,δk,β)

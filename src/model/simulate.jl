@@ -223,16 +223,22 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
     return (;AK,DK,LK,TL,ΩK,Csim,G,reg_idx,Y,X,logτ_m)
 end
 
+function pright(logk,γ,s) 
+    b = -0.5 + s/58
+    d = exp(logk + γ * b)
+    return d / (1+d)
+end
 
 function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
     Random.seed!(seed)
-    (;δW,δH,δk,γ_ψ0,γ_ψ) = θk
+    (;δW,δH,δk,γ_ψ0,γ_ψ,σ_η,γAP) = θk
     (;τgrid,ω_grid) = F
     (;AK,DK,LK,TL,ΩK,Csim,reg_idx,Y,X,logτ_m) = sim_data
     (;αΓ_τWa,αΓ_τHa,ρ) = θ
     nt = 1
     ϕW = αΓ_τWa ./ (1 .+ αΓ_τWa)
     ϕH = αΓ_τHa ./ (1 .+ αΓ_τHa)
+    Fη = Normal(0,σ_η)
     for n in eachindex(TL)
         logk = γ_ψ0
         for t in 1:TL[n]
@@ -243,7 +249,8 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
             τW = ϕW[ai] * nonmarket_time
             τH = ϕH[ai] * 72
             logτ_m[nt] = log(τW)
-            logk  = δH[ai]*log(τH) + δW[ai] * log(τW) + δk * logk
+            η = rand(Fη)
+            logk  = δH[ai]*log(τH) + δW[ai] * log(τW) + δk * logk + η
             if DK[nt]
                 ψ = γ_ψ[1] + γ_ψ[4]*AK[nt]
                 ci = Csim[n]
@@ -254,7 +261,13 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
             end
             logk += ψ + time_penalty
             p = exp(logk) / (1 + exp(logk))
-            score[nt] = rand(Binomial(58,p))
+            #score[nt] = rand(Binomial(58,p))
+            AP = 0
+            for s in 1:58
+                AP += rand()<pright(logk,γAP,s)
+            end
+            score[nt] = AP
+            #score[nt] = sum(rand()<pright(logk,γAP,s) for s in 1:58)
             ri = reg_idx[nt]
             if ri>0
                 Y[ri] = score[nt]

@@ -35,19 +35,12 @@ function data_moms(M,P)
         end
         stack(_)
     end
-
-    m4 = @chain M begin
-        @transform :tD = :YDIV .- :YMAR :tF = :YBIRTH .- :YMAR
-        groupby(:edW)
-        @combine :div = mean(:YDIV.<2010) :tD10 = mean(:tD.<10) :tF5 = mean(:tF.<5) :tF10=mean(:tF.<10)
-        stack(_)
-    end
     
-    return [m0.value ; m1.value; m2.value] #; m4.value]
+    return [m0.value ; m1.value; m2.value] 
 end
 
-function model_moms(TD,TF,D,Lsim,edW)
-    moms = zeros(14) # zeros(22)
+function model_moms(TD,TF,D,Lsim)
+    moms = zeros(14) 
     moms[1:4] .= (mean(Lsim[.!D].==2), 
             mean(Lsim[.!D].==1), 
             mean(Lsim[D].==2), 
@@ -56,25 +49,9 @@ function model_moms(TD,TF,D,Lsim,edW)
     moms[8:10] .= (mean(TF.<x) for x in (2,4,6))
     I = TD.<9998
     moms[11:14] .= (mean((TD[I] .- TF[I]).<x) for x in (0,5,10,15))
-    
-    #@views moms[15:18] .= (mean(TD[.!edW].<9998), mean(TD[edW].<9998), mean(TD[.!edW].<10), mean(TD[edW].<10))
-    #@views moms[19:22] .= (mean(TF[.!edW].<5), mean(TF[edW].<5), mean(TF[.!edW].<10), mean(TF[edW].<10))
-     
+         
     return moms
 end
-
-# function model_moms(TD,TF,D,Lsim)
-#     moms = zeros(14)
-#     moms[1:4] .= (mean(Lsim[.!D].==2), 
-#             mean(Lsim[.!D].==1), 
-#             mean(Lsim[D].==2), 
-#             mean(Lsim[D].==1))
-#     moms[5:7] .= (mean(TD.<x) for x in (5,10,15))
-#     moms[8:10] .= (mean(TF.<x) for x in (2,4,6))
-#     I = TD.<9998
-#     moms[11:14] .= (mean((TD[I] .- TF[I]).<x) for x in (0,5,10,15))
-#     return moms
-# end
 
 
 
@@ -100,7 +77,7 @@ function get_moments(θ,values,F,dat)
     mod = (;θ,values,F)
     solve_all!(mod)
     TD,TF,L_sim, _, D = data_gen(mod,dat)
-    return model_moms(TD,TF,D,L_sim,dat.edW.==1)
+    return model_moms(TD,TF,D,L_sim)
 end
 
 function ssq(θ,values,F,moms0,dat)
