@@ -5,6 +5,7 @@ include("stage2.jl")
 include("stage3.jl")
 include("stage4.jl")
 include("stage5.jl")
+include("input_output.jl")
 
 # this function combines each of the stages, written above.
 function estimate_model(x4_0,x5_0,θ,θk,V,F,data,panel; R = 10, num_iter = 1000, show_trace = true)

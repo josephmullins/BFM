@@ -16,7 +16,7 @@ V = values(F);
 x4_0 = readdlm("output/Xsave_round2")[:,1]
 x5_0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
 
-θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, M, P ; R = 10, num_iter = 5, show_trace = true)
+θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, M, P ; R = 10, num_iter = 1000, show_trace = true)
 x1,x2,x3,x4,x5 = stack_ests(θ,θk)
 writedlm("output/est_stage1",x1)
 writedlm("output/est_stage2",x2)
