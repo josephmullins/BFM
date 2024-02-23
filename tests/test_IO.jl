@@ -10,7 +10,6 @@ cprobs = CSV.read("data/CustodyMomentsSimple.csv",DataFrame).p[:]
 F = FixedParams()
 θ = Params(F)
 V = values(F);
-θ = (;θ...,cprobs)
 
 # this works, but we need to set up the sequence.
 θ = stage1(θ,F,P)
@@ -38,21 +37,18 @@ S = zeros(length(kid_data.ΩK))
     δW = fill(0.1,18),δH = fill(0.1,18),δk = 0.9,
     Γa = zeros(19))
 
+x0 = readdlm("output/stage5")[:]
 θk =  updateθk(x0,θk,θ)
 
-# the data moments:
-kmoms0 = kidmoms_data(K)
+x1,x2,x3,x4,x5 = stack_ests(θ,θk);
+θb,θkb = update_all((x1,x2,x3,x4,x5),θ,θk,F);
 
-x0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
+ma = get_moments(θ,V,F,dat)
+mb = get_moments(θb,V,F,dat)
+[ma mb]
 
-res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0),x0,Optim.Options(show_trace = true))
-θk =  updateθk(res.minimizer,θk,θ)
-
-writedlm("output/stage5",res.minimizer)
-
-x1,x2,x3,x4,x5 = stack_ests(θ,θk)
-writedlm("output/est_stage1",x1)
-writedlm("output/est_stage2",x2)
-writedlm("output/est_stage3",x3)
-writedlm("output/est_stage4",x4)
-writedlm("output/est_stage5",x5)
+kmomsa = kid_moments(S,θk,θ,F,kid_data);
+kmomsb = kid_moments(S,θkb,θb,F,kid_data);
+[kmomsa[1] kmomsb[1]]
+[kmomsa[2] kmomsb[2]]
+[kmomsa[3] kmomsb[3]]

@@ -1,3 +1,17 @@
+function stage4(x0,θ,V,F,data,panel; R=10, num_iter=1000, show_trace = true)
+    dat = prep_sim_data(data,panel;R = 10)
+    moms0 = data_moms(data,panel)
+
+    # this produces the best outcome from all the guesses
+    res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat),x0,Optim.Options(iterations=num_iter,show_trace=show_trace))
+
+    writedlm("output/stage4",res1.minimizer)
+
+    θ = update(res1.minimizer,θ,F)
+    return θ
+end
+
+
 function data_moms(M,P)
     # E[PT / FT|married / divorced]
     m0 = @chain P begin

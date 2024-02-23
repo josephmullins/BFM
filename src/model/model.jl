@@ -102,6 +102,15 @@ function values(F);
     Cτ = zeros(N_a) )
 end
 
+function prod_pars()
+    return (;γ_ψ0 = -10,
+    γ_ψ = [0.,0.,0.5,0.],
+    δW = fill(0.1,18),δH = fill(0.1,18),δk = 0.9,
+    Γa = zeros(19),
+    σ_η = 0.5,
+    γAP = 10.)
+end
+
 include("utility.jl")
 include("interpolate.jl")
 include("solve.jl")

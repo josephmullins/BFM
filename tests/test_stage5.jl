@@ -57,6 +57,9 @@ x0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
 res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0),x0,Optim.Options(show_trace = true))
 θk =  updateθk(res.minimizer,θk,θ)
 
+
+# -------
+
 inputs,mstat = input_decomposition(θk,θ,F,kid_data)
 mean(inputs,dims=2)
 d = [mean(inputs[:,mstat.==0],dims=2) mean(inputs[:,mstat.==1],dims=2)]

@@ -1,4 +1,25 @@
-# add to data frame so we can use a different status variable
+function stage5(x0,θk,mod,dat,K;num_iter = 1000,show_trace = true)
+    (;θ) = mod
+    (;cprobs) = θ
+
+    solve_all!(mod)
+    sim_data = data_gen(mod,dat);
+
+    kid_data = prep_child_data(sim_data,dat,cprobs);
+
+    S = zeros(length(kid_data.ΩK))
+
+    # the data moments:
+    kmoms0 = kidmoms_data(K)
+
+    #x0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
+
+    res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0),x0,Optim.Options(iterations = num_iter,show_trace = show_trace))
+    θk =  updateθk(res.minimizer,θk,θ)
+    
+    return θk
+end
+
 function kidmoms_data(d)
     ma = testscore_averages(d).S
     sa = testscore_sd(d).sd
@@ -11,7 +32,7 @@ end
 function testscore_averages(d) #<-?
     m = @chain d begin
         @subset :AGE.<=15
-        @subset :AGE.>=3
+        @subset :AGE.>=4
         #@transform :AGE = round.(:AGE ./ 4)
         groupby([:dgroup,:AGE])
         @combine :S = mean(skipmissing(:AP_raw))
@@ -22,7 +43,7 @@ end
 function testscore_sd(d)
     m = @chain d begin
         @subset :AGE.<=15
-        @subset :AGE.>=3
+        @subset :AGE.>=4
         #@transform :AGE = round.(:AGE ./ 4)
         groupby(:AGE)
         @combine :sd = std(skipmissing(:AP_raw))
@@ -54,8 +75,8 @@ end
 function kid_moments(S,θk,θ,F,kid_data)
     (;Y,X) = kid_data
     predict_k!(S,θk,θ,F,kid_data)
-    ma = [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 3:15]
-    sa = [std(S[kid_data.AK.==a]) for a in 3:15]
+    ma = [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 4:15]
+    sa = [std(S[kid_data.AK.==a]) for a in 4:15]
     β = inv(X' * X) * X' * Y
     mb = β[2:3]
     return ma,sa,mb
