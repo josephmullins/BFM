@@ -45,15 +45,11 @@ S = zeros(length(kid_data.ΩK))
 
 # the data moments:
 kmoms0 = kidmoms_data(K)
-kmoms1 = kid_moments(S,θk,θ,F,kid_data)
 
+# the weighting matrix
 wght = ones(41)
 wght[40:41] .= 1000.
 # we can do the same thing for the data easily enough
-obj_stage5(S,θk,θ,F,kid_data,kmoms0,wght)
-x0 = [-10.,0.,0.,0.2,0.,1.,log(0.2)]
-
-x0 = [-7.5,0.,0.,0.05,0.00,2.5,log(0.2)]
 x0 = [-8.,0.,0.,0.05,0.00,2.5,log(0.2)]
 res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0,wght),x0,Optim.Options(show_trace = true))
 θk =  updateθk(res.minimizer,θk,θ)
@@ -61,6 +57,9 @@ res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0,wght),x0
 inputs,mstat = input_decomposition(θk,θ,F,kid_data)
 mean(inputs,dims=2)
 [mean(inputs[:,mstat.==0],dims=2) mean(inputs[:,mstat.==1],dims=2)]
+# CAN USE standard deviations to fit this.
+# but note that we don't match std deviations in test scores, so what am I thinking??
+# begs the question, why no shock to test scores??
 
 # ---- a cheeky plot to show what's what
 θk = updateθk(res.minimizer,θk,θ)
@@ -106,3 +105,6 @@ p
 #     end
 # end
 # plot(-5:10,[mean(L_sim[tsd.==x].==g) for x in -5:10, g in 1:2])
+
+# here we have the standard deviations
+#   - do we want to include this, since there is a nonlinear transformation of k?
