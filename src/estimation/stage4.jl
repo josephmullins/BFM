@@ -129,3 +129,14 @@ function estimate_blocks(θ,blocks,wght,values,F,moms0,dat)
     end
     return θ
 end
+
+function get_tsd(TD,dat)
+    tsd = Int64[]
+    for n in eachindex(TD)
+        tlength = dat.tlength[n]
+        for t in 1:tlength
+            push!(tsd,t-1-TD[n])
+        end
+    end
+    return tsd
+end

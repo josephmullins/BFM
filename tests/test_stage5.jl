@@ -87,21 +87,3 @@ end
 plot!(kmoms0[2],linecolor=:blue,subplot=2)
 plot!(kmoms1[2],linecolor=:blue,linestyle=:dash,subplot=2)
 
-
-
-## take a look at labor supply before divorce
-# TD = sim_data[1];
-# L_sim = sim_data[3];
-# Ω_sim = sim_data[4];
-# D = sim_data[5]
-# tsd = Int64[]
-# for n in eachindex(TD)
-#     tlength = dat.tlength[n]
-#     for t in 1:tlength
-#         push!(tsd,t-1-TD[n])
-#     end
-# end
-# plot(-5:10,[mean(L_sim[tsd.==x].==g) for x in -5:10, g in 1:2])
-
-# here we have the standard deviations
-#   - do we want to include this, since there is a nonlinear transformation of k?

@@ -20,6 +20,7 @@ end
 
 function update_all(x,θ,θk,F)
     (x1,x2,x3,x4,x5) = x
+    (;N_ϵ) = F
     # stage 1
     θ.γ_YH[:] .= x1[1:6] #<- this will edit the original θ?
     θ.γ_YW[:] .= x1[7:12]
