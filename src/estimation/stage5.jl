@@ -1,4 +1,4 @@
-function stage5(x0,θk,mod,dat,K;num_iter = 1000,show_trace = true)
+function stage5(x0,θk,mod,dat,K;num_iter = 1000,show_trace = true, seed = 20240220)
     (;θ) = mod
     (;cprobs) = θ
 
@@ -14,7 +14,7 @@ function stage5(x0,θk,mod,dat,K;num_iter = 1000,show_trace = true)
 
     #x0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
 
-    res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0),x0,Optim.Options(iterations = num_iter,show_trace = show_trace))
+    res = optimize(x->obj_stage5(S,updateθk(x,θk,θ),θ,F,kid_data,kmoms0 ; seed),x0,Optim.Options(iterations = num_iter,show_trace = show_trace))
     θk =  updateθk(res.minimizer,θk,θ)
     
     return θk
@@ -72,9 +72,9 @@ function construct_regression_data(d)
 end
 
 
-function kid_moments(S,θk,θ,F,kid_data)
+function kid_moments(S,θk,θ,F,kid_data ; seed = 20240220)
     (;Y,X) = kid_data
-    predict_k!(S,θk,θ,F,kid_data)
+    predict_k!(S,θk,θ,F,kid_data ; seed)
     ma = [mean(S[kid_data.AK.==a .&& kid_data.G.==g]) for g in 1:3 for a in 4:15]
     sa = [std(S[kid_data.AK.==a]) for a in 4:15]
     β = inv(X' * X) * X' * Y
@@ -82,9 +82,9 @@ function kid_moments(S,θk,θ,F,kid_data)
     return ma,sa,mb
 end
 
-function obj_stage5(S,θk,θ,F,kid_data,kmoms0)
+function obj_stage5(S,θk,θ,F,kid_data,kmoms0 ; seed = 20240220)
     ma0,sa0,mb0 = kmoms0
-    ma1,sa1,mb1 = kid_moments(S,θk,θ,F,kid_data)
+    ma1,sa1,mb1 = kid_moments(S,θk,θ,F,kid_data ; seed)
     return sum((ma1 .- ma0).^2) + sum((sa1 .- sa0).^2) + 1000*sum((mb1 .- mb0).^2)
 end
 
@@ -114,13 +114,6 @@ function get_Γa!(Γa,δk,β)
         Γ_next = Γa[a]
     end
 end
-
-# recall the recursive formula:
-# Γ_{s,a} = δ_{s,a} * β Γ_{a+1}
-# Γ_{a} = 1 + β * δk* Γ_{a+1}
-# so:
-# δ_{s,a+1} = δ_{s,a} * Γ_{s,a+1} * Γ_{a+1} / (Γ_{s,a} * Γ_{a+2})
-# Γ_{a+1} / Γ_{a+2} = (1 + β * δ_{k} * Γ_{a+2}) / Γ_{a+2}
 
 function input_decomposition(θk,θ,F,sim_data;seed=20240220)
     Random.seed!(seed)

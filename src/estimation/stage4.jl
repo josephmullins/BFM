@@ -1,9 +1,9 @@
-function stage4(x0,θ,V,F,data,panel; R=10, num_iter=1000, show_trace = true)
+function stage4(x0,θ,V,F,data,panel; R=10, num_iter=1000, show_trace = true, seed = 1234)
     dat = prep_sim_data(data,panel;R = 10)
     moms0 = data_moms(data,panel)
 
     # this produces the best outcome from all the guesses
-    res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat),x0,Optim.Options(iterations=num_iter,show_trace=show_trace))
+    res1 = optimize(x->ssq(update(x,θ,F),V,F,moms0,dat ; seed),x0,Optim.Options(iterations=num_iter,show_trace=show_trace))
 
     writedlm("output/stage4",res1.minimizer)
 
@@ -87,15 +87,15 @@ function update(x,ii,θ,F)
 end
 
 # let's fix these?
-function get_moments(θ,values,F,dat)
+function get_moments(θ,values,F,dat;seed = 1234)
     mod = (;θ,values,F)
     solve_all!(mod)
-    TD,TF,L_sim, _, D = data_gen(mod,dat)
+    TD,TF,L_sim, _, D = data_gen(mod, dat ; seed)
     return model_moms(TD,TF,D,L_sim)
 end
 
-function ssq(θ,values,F,moms0,dat)
-    moms1 = get_moments(θ,values,F,dat)
+function ssq(θ,values,F,moms0,dat ; seed = 1234)
+    moms1 = get_moments(θ,values,F,dat ; seed)
     ssq_ = sum((moms1 .- moms0).^2)
     if isnan(ssq_)
         #println(Inf)
