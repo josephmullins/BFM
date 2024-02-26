@@ -28,6 +28,7 @@ function draw_boot_sample(M,P,K)
     N = nrow(M)
     Mb = M[rand(1:N,N),:]
     Mb[!,:MIDb] = 1:N
+
     Pb = @chain Mb begin
         @select :MID :MIDb
         innerjoin(P,on=:MID)
@@ -43,4 +44,9 @@ end
 
 #OK: problem (?) do we want to factor simulation noise into this? yes, we do?
 Mb,Pb,Kb = draw_boot_sample(M,P,K)
+
+x4_0 = get_x(θ)
+x5_0 = get_xk(θk)
+
+θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, Mb, Pb, Kb ; R = 10, num_iter = 5, show_trace = true)
 

@@ -107,6 +107,11 @@ function updateθk(x,θk,θ)
     return (;θk...,γ_ψ0,δk,σ_η,γAP)
 end
 
+function get_xk(θk)
+    (;γ_ψ0,γ_ψ,δk,δW,σ_η,γAP) = θk
+    return [γ_ψ0 ; γ_ψ ; log(δk / (1-δk)) ; log(δW[1]) ; log(σ_η) ; log(γAP)]
+end
+
 function get_Γa!(Γa,δk,β)
     Γ_next = 1/(1-β) 
     for a in reverse(eachindex(Γa))
