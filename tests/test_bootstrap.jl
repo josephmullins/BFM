@@ -50,3 +50,13 @@ x5_0 = get_xk(θk)
 
 θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, Mb, Pb, Kb ; R = 10, num_iter = 5, show_trace = true)
 
+x4_0 = readdlm("output/Xsave_round2")[:,1]
+x4_1 = readdlm("output/Xsave_round2")[:,2]
+
+dat = prep_sim_data(M,P;R = 10)
+moms0 = data_moms(M,P)
+ssq(update(x4_0,θ,F),V,F,moms0,dat)
+ssq(update(x4_1,θ,F),V,F,moms0,dat)
+
+θ = update(x4_0,θ,F)
+moms1 = get_moments(θ,V,F,dat)
