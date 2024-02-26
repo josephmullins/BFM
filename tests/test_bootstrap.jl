@@ -22,41 +22,12 @@ x5 = readdlm("output/est_stage5")[:]
 
 θ,θk = update_all((x1,x2,x3,x4,x5),θ,θk,F);
 
-# practice getting a bootstrap sample
-# require the K and P be ordered properly
-function draw_boot_sample(M,P,K)
-    N = nrow(M)
-    Mb = M[rand(1:N,N),:]
-    Mb[!,:MIDb] = 1:N
+X1b,X2b,X3b,X4b,X5b = bootstrap_pars(θ,θk,V,F,M,P,K,10 ; R = 10, num_iter = 2, show_trace = false)
 
-    Pb = @chain Mb begin
-        @select :MID :MIDb
-        innerjoin(P,on=:MID)
-        @orderby :MIDb :YEAR
-    end
-    Kb = @chain Mb begin
-        @select :MID :MIDb
-        innerjoin(K,on=:MID)
-        @orderby :MIDb :KID :YEAR
-    end
-    return Mb,Pb,Kb
-end
+#θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, Mb, Pb, Kb ; R = 10, num_iter = 5, show_trace = false, seed4, seed5)
 
-#OK: problem (?) do we want to factor simulation noise into this? yes, we do?
-Mb,Pb,Kb = draw_boot_sample(M,P,K)
-
-x4_0 = get_x(θ)
-x5_0 = get_xk(θk)
-
-θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, Mb, Pb, Kb ; R = 10, num_iter = 5, show_trace = true)
-
-x4_0 = readdlm("output/Xsave_round2")[:,1]
-x4_1 = readdlm("output/Xsave_round2")[:,2]
-
-dat = prep_sim_data(M,P;R = 10)
-moms0 = data_moms(M,P)
-ssq(update(x4_0,θ,F),V,F,moms0,dat)
-ssq(update(x4_1,θ,F),V,F,moms0,dat)
-
-θ = update(x4_0,θ,F)
-moms1 = get_moments(θ,V,F,dat)
+writedlm("output/boot_stage1",x1)
+writedlm("output/boot_stage2",x2)
+writedlm("output/boot_stage3",x3)
+writedlm("output/boot_stage4",x4)
+writedlm("output/boot_stage5",x5)
