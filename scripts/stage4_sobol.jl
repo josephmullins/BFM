@@ -39,14 +39,14 @@ function sobol_search(x_lb,x_ub,mod,moms0,dat;N=10_000)
         x = x_lb .+ u .* (x_ub .- x_lb)
         Xsave[:,n] .= x
         Qsave[n] = ssq(update(x,θ,F),values,F,moms0,dat)
-        println(n," ",Qsave[n])
+        #println(n," ",Qsave[n])
     end
     ii = sortperm(Qsave)[1:10]
     X = Xsave[:,ii]
     return X,Qsave[ii]
 end
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat ; N=20_000)
 
 writedlm("output/Xsave_round1",X)
 writedlm("output/Qsave_round1",Q)
@@ -60,7 +60,7 @@ writedlm("output/Qsave_round1",Q)
 x_lb = [minimum(X[i,:]) for i in axes(X,1)]
 x_ub = [maximum(X[i,:]) for i in axes(X,1)]
 
-X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat)
+X,Q = sobol_search(x_lb,x_ub,mod,moms0,dat ; N=20_000)
 
 writedlm("output/Xsave_round2",X)
 writedlm("output/Qsave_round2",Q)
