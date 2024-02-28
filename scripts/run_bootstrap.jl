@@ -22,10 +22,10 @@ x5 = readdlm("output/est_stage5")[:]
 
 θ,θk = update_all((x1,x2,x3,x4,x5),θ,θk,F);
 
-X1b,X2b,X3b,X4b,X5b = bootstrap_pars(θ,θk,V,F,M,P,K,10 ; R = 10, num_iter = 2, show_trace = false)
+X1b,X2b,X3b,X4b,X5b = bootstrap_pars(θ,θk,V,F,M,P,K,50 ; R = 10, num_iter = 300, show_trace = false)
 
-writedlm("output/boot_stage1",x1)
-writedlm("output/boot_stage2",x2)
-writedlm("output/boot_stage3",x3)
-writedlm("output/boot_stage4",x4)
-writedlm("output/boot_stage5",x5)
+writedlm("output/boot_stage1",X1b)
+writedlm("output/boot_stage2",X2b)
+writedlm("output/boot_stage3",X3b)
+writedlm("output/boot_stage4",X4b)
+writedlm("output/boot_stage5",X5b)
