@@ -39,3 +39,16 @@ function bootstrap_pars(θ,θk,V,F,M,P,K,num_boot ; R = 10, num_iter = 500, show
     end
     return X1b,X2b,X3b,X4b,X5b    
 end
+
+function bootstrap_moms(M,P,K,num_boot)
+    seed0 = 1010
+    k_boot = zeros(36,num_boot)
+    for b in 1:num_boot
+        println(b)
+        Random.seed!(seed0+b)
+        Mb,Pb,Kb = draw_boot_sample(M,P,K)
+        kmoms = kidmoms_data(Kb)
+        k_boot[:,b] = kmoms[1]
+    end
+    return k_boot
+end

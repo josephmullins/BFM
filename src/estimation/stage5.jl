@@ -21,21 +21,28 @@ function stage5(x0,θk,mod,dat,K;num_iter = 1000,show_trace = true, seed = 20240
 end
 
 function kidmoms_data(d)
+    m = testscore_averages(d)
+    ma = m.S
+    wght = m.wght
     ma = testscore_averages(d).S
     sa = testscore_sd(d).sd
     k = construct_regression_data(d)
     mod = lm(@formula(AP_raw ~ log(tau_m) + AP_lag ),k)
     mb = coef(mod)[2:3]
-    return ma,sa,mb
+    return ma,sa,mb,wght
 end
 
 function testscore_averages(d) #<-?
+    d0 = DataFrame(AGE=repeat(4:15,3),dgroup = repeat(1:3,inner=12))
     m = @chain d begin
         @subset :AGE.<=15
         @subset :AGE.>=4
         #@transform :AGE = round.(:AGE ./ 4)
         groupby([:dgroup,:AGE])
         @combine :S = mean(skipmissing(:AP_raw))
+        rightjoin(d0,on=[:dgroup,:AGE])
+        @orderby :dgroup :AGE
+        @transform :wght = 1. * .!ismissing.(:S) :S = coalesce.(:S,0.)
     end
     return m
 end
@@ -83,9 +90,9 @@ function kid_moments(S,θk,θ,F,kid_data ; seed = 20240220)
 end
 
 function obj_stage5(S,θk,θ,F,kid_data,kmoms0 ; seed = 20240220)
-    ma0,sa0,mb0 = kmoms0
+    ma0,sa0,mb0,wght = kmoms0
     ma1,sa1,mb1 = kid_moments(S,θk,θ,F,kid_data ; seed)
-    return sum((ma1 .- ma0).^2) + sum((sa1 .- sa0).^2) + 1000*sum((mb1 .- mb0).^2)
+    return sum(wght .* (ma1 .- ma0).^2) + sum((sa1 .- sa0).^2) + 1000*sum((mb1 .- mb0).^2)
 end
 
 function updateθk(x,θk,θ)
