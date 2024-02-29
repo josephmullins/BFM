@@ -1,3 +1,4 @@
+using Printf
 
 function stack_ests(θ,θk)
     # stage1
@@ -60,3 +61,41 @@ function update_all(x,θ,θk,F)
 
     return θ,θk
 end
+
+form(x) = @sprintf("%0.2f",x) #<- print to 2 digits
+formse(x) = string("(",@sprintf("%0.2f",x),")")
+form3(x) = @sprintf("%0.3f",x) #<- print to 2 digits
+form3se(x) = string("(",@sprintf("%0.3f",x),")")
+# a helper function to write a collection of strings into separate columns
+function tex_delimit(x)
+    str = x[1]
+    num_col = length(x)
+    for i in 2:num_col
+        str *=  "&" * x[i]
+    end
+    return str
+end
+
+function write_inc_table(θ,θse)
+    file = open("output/tables/income_ests.tex", "w")
+    write(file," & \\multicolumn{2}{c}{Wife} & \\multicolumn{2}{c}{Wife} \\\\ \n ")
+    write(file," & Non-College & College & Non-College & College \\\\ \\cmidrule(r){2-5} \n")
+    write(file, " Const. &",tex_delimit(form.([θ.γ_YW[:,1] ; θ.γ_YH[:,1]]))," \\\\ \n")
+    write(file," & ",tex_delimit(formse.([θse.γ_YW[:,1] ; θse.γ_YH[:,1]]))," \\\\ \n")
+    write(file, " Age & & & ",tex_delimit(form3.(θ.γ_YH[:,2]))," \\\\ \n")
+    write(file," & & & ",tex_delimit(form3se.(θse.γ_YH[:,2]))," \\\\ \n")
+    write(file, " Age \$^2\$ & & & ",tex_delimit(form3.(θ.γ_YH[:,3]))," \\\\ \n")
+    write(file," & & & ",tex_delimit(form3se.(θse.γ_YH[:,3]))," \\\\ \n")
+    write(file, "FT Exp (\$\\kappa\$) & ",tex_delimit(form3.(θ.γ_YW[:,2]))," & & \\\\ \n")
+    write(file," & ",tex_delimit(form3se.(θse.γ_YW[:,2]))," & & \\\\ \n")
+    write(file, "FT Exp \$^2\$ (\$\\kappa^2\$) & ",tex_delimit(form3.(θ.γ_YW[:,3]))," & \\\\ \n")
+    write(file," & ",tex_delimit(form3se.(θse.γ_YW[:,3]))," & &  \\\\ \n")
+    close(file)
+end
+
+# tables remaining:
+# - everything from stage 4 
+# - model fit from stage 4
+# - production parameters with ρ as well.
+# - model fit from stage 4 plus picture of test scores.
+# - also look at averages of each group relative to never married
