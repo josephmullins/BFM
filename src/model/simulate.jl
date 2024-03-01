@@ -211,7 +211,7 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
             end
             # number of eligible periods is tlength-8 (must be at least 8 in the second period)
             push!(reg_idx,zeros(min(8,tlength))...)
-            rlength = tlength-8
+            rlength = max(tlength-8,0)
             push!(reg_idx,ri:(ri+rlength-1)...)
             ri += rlength
         end
