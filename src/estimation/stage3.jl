@@ -21,7 +21,7 @@ function stage3(d,τgrid,cprobs) # Ebar = E[1/(1+)]
         @combine :m=sum(:wght .* :r) / sum(:wght)
         _.m[1]
     end
-    modratio(ρ,τgrid,p) = sum((τgrid .+ τgrid.^2 ./ (1 .+ ρ.*(1 .- τgrid))).*p)
+    modratio(ρ,τgrid,p) = sum(((τgrid .+ τgrid.^2) ./ (1 .+ ρ.*(1 .- τgrid))).*p)
     res = optimize(ρ->(m - modratio(ρ,τgrid,cprobs))^2,0,10)
     ρ_est = res.minimizer
     return ρ_est
