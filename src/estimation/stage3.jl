@@ -8,12 +8,12 @@ function stage3(d,τgrid,cprobs) # Ebar = E[1/(1+)]
     phi_m = @chain d begin
         @subset :DIV.==0 :AGE.<=17 :AGE.>=7
         groupby(:AGE)
-        @combine :PHIm = mean(skipmissing(:PHI_F))
+        @combine :PHIm = mean(skipmissing(:tau_f)) :wght = sum(.!ismissing.(:tau_f))
     end
     phi_d = @chain d begin
         @subset :DIV.==1 :AGE.<=17 :AGE.>=7
         groupby(:AGE)
-        @combine :PHId = mean(skipmissing(:PHI_F)) :wght = sum(.!ismissing.(:PHI_F))
+        @combine :PHId = mean(skipmissing(:tau_f)) 
     end
     m = @chain phi_d begin
         innerjoin(phi_m,on=:AGE)
@@ -21,7 +21,7 @@ function stage3(d,τgrid,cprobs) # Ebar = E[1/(1+)]
         @combine :m=sum(:wght .* :r) / sum(:wght)
         _.m[1]
     end
-    modratio(ρ,τgrid,p) = sum((τgrid ./ (1 .+ ρ.*(1 .- τgrid))).*p)
+    modratio(ρ,τgrid,p) = sum(((τgrid .+ τgrid.^2) ./ (1 .+ ρ.*(1 .- τgrid))).*p)
     res = optimize(ρ->(m - modratio(ρ,τgrid,cprobs))^2,0,10)
     ρ_est = res.minimizer
     return ρ_est
