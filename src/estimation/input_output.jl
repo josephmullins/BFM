@@ -155,7 +155,8 @@ end
 
 function write_decomposition(d,dse)
     str = ["Total","TFP","Mother's Time","Father's Time"]
-    write(file,"Parameter & Estimate & (Std Error) \\\\ \\cmidrule(r){1-3} \n")
+    file = open("output/tables/skill_decomposition.tex","w")
+    write(file,"Input & Estimate & (Std Error) \\\\ \\cmidrule(r){1-3} \n")
     for r in eachindex(str)
         write(file,str[r]," & ",form(d[r])," & ",formse(dse[r])," \\\\ \n")
     end

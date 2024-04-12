@@ -43,7 +43,6 @@ se5 = std(X5b,dims=2)[:]
 θk = (;θk...,ρ = θ.ρ)
 θkse = (;θkse...,ρ = θse.ρ)
 
-break
 # ---- tables with estimates
 write_inc_table(θ,θse)
 write_prefs(θ,θse)
@@ -131,6 +130,7 @@ for b in 1:50
 end
 dse = std(Db,dims=2)
 
+write_decomposition(d,dse)
 
 # calculate outcomes for bilateral vs unilateral (easy, just through L)
 
