@@ -279,6 +279,13 @@ function predict_k!(score,θk,θ,F,sim_data;seed=20240220)
     end
 end
 
+function full_simulation(dat,mod,cprobs)
+    solve_all!(mod)
+    sim_data = data_gen(mod,dat)
+    kid_data = prep_child_data(sim_data,dat,cprobs);
+    return sim_data,kid_data
+end
+
 # a function to calculate moments (easy but let's check)
 # for now, let's just match by the three categories: divorced, will divorce, never divorced.
 # a function to calculate the
