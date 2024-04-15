@@ -12,7 +12,7 @@ end
 # - this supports type stability and avoids unnecessary allocations
 function prep_sim_data(dat,panel;R = 1)
     dat = repeat(dat,R)
-    legal = repeat(panel.L,R) # these need to be synced up and they're not!!!
+    legal = repeat(panel.L,R)
 
     (;edW = 1 .+ dat.edW,
     edH = 1 .+ dat.edH,
