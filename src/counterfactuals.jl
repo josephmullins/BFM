@@ -1,12 +1,85 @@
 
+function divorce_standard_counterfactual(dat,mod,θk)
+    (;θ) = mod
+    (;cprobs, β) = θ
+    # all mutual consent
+    dat.legal[:] .= 1
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
-function counterfactual_statistics(kid_data,sim_data,dat,θ,θk,mod)
+    # all unilateral
+    dat.legal[:] .= 2
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    println(stats1.welf_H - stats0.welf_H)
+    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
+    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
+    Δlogwage = stats1.log_wage - stats0.log_wage
+    Δfert = stats1.fertility - stats0.fertility
+    Δdiv = stats1.divorce - stats0.divorce
+    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
+    return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+end
+
+function custody_counterfactual(dat,mod,θk)
+    (;θ,F) = mod
+    (;cprobs, β) = θ
+
+    # sole maternal custody
+    cprobs0 = [1.,0.,0.,0.,0.]
+    θ = update_Cτ(θ,F.τgrid,cprobs0)
+    mod = (;mod...,θ)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs0)
+    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    # complete split
+    cprobs1 = [0.,0.,0.,0.,1.]
+    θ = update_Cτ(θ,F.τgrid,cprobs1)
+    mod = (;mod...,θ)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs1)
+    stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
+    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
+    Δlogwage = stats1.log_wage - stats0.log_wage
+    Δfert = stats1.fertility - stats0.fertility
+    Δdiv = stats1.divorce - stats0.divorce
+    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
+    return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+
+end
+
+function child_support_counterfactual(dat,mod,θk)
+    (;θ, F) = mod
+    (;cprobs, β) = θ
+    # baseline
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    # increase child support to 50% (??) did I set this too high to begin with??
+    F = (;F...,π_H = 0.5)
+    mod = (;mod...,F)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
+    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
+    Δlogwage = stats1.log_wage - stats0.log_wage
+    Δfert = stats1.fertility - stats0.fertility
+    Δdiv = stats1.divorce - stats0.divorce
+    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
+    return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+end
+
+
+function counterfactual_statistics(kid_data,dat,θ,θk,mod)
     # Ex-Ante Welfare and 
-    welf_H,welf_W = average_welfare(mod,dat)
+    welf_H, welf_W, log_wage, fertility, divorce = model_stats(mod,dat)
 
     # Child Skills
-
-    # Mother's Log Potential Wages
+    d, se = child_skill_outcomes(θk,θ,F,kid_data)
+    (; welf_H,welf_W,log_wage,fertility,divorce,decomp = d, se)
 end
 
 function child_skill_outcomes(θk,θ,F,kid_data)
@@ -18,47 +91,6 @@ function child_skill_outcomes(θk,θ,F,kid_data)
     return d, sd_skills
 end
 
-
-function average_welfare(mod,dat)
-    (;values,θ,F) = mod
-    (;VW1,VH1) = values
-
-    (;N_ϵ,N_ω,N_d) = F
-    N = size(dat.edW,1)
-
-    # get the initial distribution
-    (;Π_ϵ) = θ
-    πϵ0 = eigvecs(I(N_ϵ) .- Π_ϵ')[:,1]
-    πϵ0 ./= sum(πϵ0)
-    πϵ_init = Categorical(πϵ0)
-
-    πω0 = Categorical(fill(1/N_ω,N_ω))
-
-
-    #VW & VH : T_f-1 x N_d x N_ϵ x N_κ x N_ω
-    idx = LinearIndices((N_ϵ,N_ω,N_d,2,2,2))
-    nt = 1
-    for n in 1:N
-        eW = dat.edW[n]
-        eH = dat.edW[n]
-        ad = dat.AD[n]
-        adi = 1 + (ad>-5) + (ad>5)
-        aw0 = dat.AW0[n]
-        maxT = dat.tlength[n]
-        κ = dat.κ[n]
-        #ωt = N_ω #<- everyone starts at the highest draw (an alternative assumption)
-        ωt = rand(πω0) 
-        ϵt = rand(πϵ_init) 
-        l = dat.legal[nt]
-
-        i = idx[ϵt,ωt,adi,eH,eW,l]
-        tt = aw0+1-18
-        welf_H += etpH[tt](κ,i)
-        welf_W += etpW[tt](κ,i)
-        nt += maxT
-    end
-    return welf_H / N, welf_W / N
-end
 
 # this function calculates:
 # - initial welfare of both agents

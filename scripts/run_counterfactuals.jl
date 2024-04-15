@@ -48,3 +48,12 @@ average_welfare(model,dat)
 
 # check
 model_stats(model,dat)
+
+# check
+
+divorce_standard_counterfactual(dat,model,θk)
+
+dat = prep_sim_data(M,P;R = 10)
+custody_counterfactual(dat,model,θk)
+
+child_support_counterfactual(dat,model,θk)
