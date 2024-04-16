@@ -1,18 +1,4 @@
-
-function divorce_standard_counterfactual(dat,mod,θk)
-    (;θ) = mod
-    (;cprobs, β) = θ
-    # all mutual consent
-    dat.legal[:] .= 1
-    sim_data,kid_data = full_simulation(dat,mod,cprobs)
-    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-
-    # all unilateral
-    dat.legal[:] .= 2
-    sim_data,kid_data = full_simulation(dat,mod,cprobs)
-    stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-
-    println(stats1.welf_H - stats0.welf_H)
+function compare_stats(stats1,stats0,β)
     ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
     ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
     Δlogwage = stats1.log_wage - stats0.log_wage
@@ -20,6 +6,25 @@ function divorce_standard_counterfactual(dat,mod,θk)
     Δdiv = stats1.divorce - stats0.divorce
     Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
     return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+end
+
+function divorce_standard_counterfactual(dat,mod,θk,stats0)
+    (;θ) = mod
+    (;cprobs, β) = θ
+
+    # all mutual consent
+    dat.legal[:] .= 1
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats_mc = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    r1 = compare_stats(stats_mc,stats0,β)
+
+    # all unilateral
+    dat.legal[:] .= 2
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats_ul = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    r2 = compare_stats(stats_ul,stats0,β)
+
+    return r1,r2
 end
 
 function custody_counterfactual(dat,mod,θk)
@@ -142,7 +147,7 @@ function model_stats(mod,dat;seed=1234)
     nt = 1
     for n in 1:N
         eW = dat.edW[n]
-        eH = dat.edW[n]
+        eH = dat.edH[n]
         ad = dat.AD[n]
         adi = 1 + (ad>-5) + (ad>5)
         aw0 = dat.AW0[n]

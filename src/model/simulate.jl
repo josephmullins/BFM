@@ -50,7 +50,7 @@ function data_gen(mod,dat;seed=1234)
     nt = 1
     for n in 1:N
         eW = dat.edW[n]
-        eH = dat.edW[n]
+        eH = dat.edH[n]
         ad = dat.AD[n]
         adi = 1 + (ad>-5) + (ad>5)
         aw0 = dat.AW0[n]
