@@ -26,12 +26,12 @@ Mb = zeros()
 
 function time_moms(d)
     phi_m = @chain d begin
-        @subset :DIV.==0 :AGE.<=17 :AGE.>=7
+        @subset :DIV.==0 :AGE.<=17 :AGE.>=4
         groupby(:AGE)
         @combine :PHIm = mean(skipmissing(:tau_f)) :wght = sum(.!ismissing.(:tau_f))
     end
     phi_d = @chain d begin
-        @subset :DIV.==1 :AGE.<=17 :AGE.>=7
+        @subset :DIV.==1 :AGE.<=17 :AGE.>=4
         groupby(:AGE)
         @combine :PHId = mean(skipmissing(:tau_f)) #:wght = sum(.!ismissing.(:tau_f))
     end
@@ -43,6 +43,7 @@ function time_moms(d)
     end
     return m
 end
+
 
 function time_moms_alt(d)
     phi_m = @chain d begin
@@ -56,10 +57,24 @@ function time_moms_alt(d)
     return phi_d.m[1] / phi_m.m[1]
 end
 
+# function time_moms(d)
+#     phi_m = @chain d begin
+#         @subset :DIV.==0 :AGE.<=17 #:AGE.>=7
+#         groupby(:AGE)
+#         @combine :tm = mean(skipmissing(:tau_f))
+#         @select :AGE :tm
+#     end
+#     phi_d = @chain d begin
+#         @subset :DIV.==1 :AGE.<=17 #:AGE.>=7
+#         groupby(:AGE)
+#         @combine :td = mean(skipmissing(:tau_f))
+#     end
+#     return innerjoin(phi_m,phi_d,on=:AGE)
+# end
+# m = time_moms(K)
+
 
 m0 = time_moms(K)
-
-break
 
 num_boot = 100
 mb = zeros(num_boot)
@@ -94,3 +109,31 @@ end
 
 ρgrid = LinRange(0.,10.,100)
 plot(ρgrid, [modratio(x,F.τgrid,cprobs) for x in ρgrid])
+
+using FixedEffectModels
+K2 = @subset(K,:tau_f.>0)
+reg(K2,@formula(log(tau_f) ~ DIV + fe(KID) + fe(AGE)))
+reg(K,@formula(tau_f ~ DIV + fe(KID) + fe(AGE)))
+reg(K,@formula(tau_f ~ DIV + fe(AGE)))
+
+
+@chain K begin
+    @subset .!:DIV .!ismissing.(:tau_f) :AGE.<=17
+    groupby(:AGE)
+    @combine m = mean(:tau_f)
+end
+
+reg(K,@formula(tau_f ~ AGE*DIV + fe(KID)))
+
+f(ρ) =  dot(cprobs,(1 .- F.τgrid)*(log(2/7)+log(5/7))/2 .+ log.(1 ./ F.τgrid) + log.(1 ./ (1 .+ ρ*(1 .- F.τgrid))))
+g(ρ) = dot(cprobs,log.(1 ./ (F.τgrid.*(1 .+ ρ*(1 .- F.τgrid)))))
+g2(ρ) = dot(cprobs,log.(1 ./ (1 .+ ρ*(1 .- F.τgrid))))
+
+
+# THIS REGRESSION SHOWS an alternative estimate for τ_m that accounts for fixed effects
+@chain K begin
+    @subset .!ismissing.(:tau_f) :AGE.<=17
+    groupby(:AGE)
+    @transform gamma_a = mean(:tau_f[.!:DIV])
+    reg(@formula(tau_f ~ gamma_a + gamma_a&DIV + fe(KID)))
+end
