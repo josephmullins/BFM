@@ -73,7 +73,7 @@ model_stats(model,dat)
 
 # check
 
-divorce_standard_counterfactual(dat,model,θk)
+divorce_standard_counterfactual(dat,model,θk,stats_baseline)
 
 dat = prep_sim_data(M,P;R = 10)
 custody_counterfactual(dat,model,θk)
