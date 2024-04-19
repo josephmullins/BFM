@@ -1,4 +1,4 @@
-using DataFrames, DataFramesMeta, CSV, GLM, Optim
+using DataFrames, DataFramesMeta, CSV, FixedEffectModels, Optim
 
 include("stage1.jl")
 include("stage2.jl")

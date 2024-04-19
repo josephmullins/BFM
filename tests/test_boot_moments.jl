@@ -131,7 +131,7 @@ g2(ρ) = dot(cprobs,log.(1 ./ (1 .+ ρ*(1 .- F.τgrid))))
 
 
 # THIS REGRESSION SHOWS an alternative estimate for τ_m that accounts for fixed effects
-@chain K begin
+mod = @chain K begin
     @subset .!ismissing.(:tau_f) :AGE.<=17
     groupby(:AGE)
     @transform gamma_a = mean(:tau_f[.!:DIV])

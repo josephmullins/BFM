@@ -17,27 +17,27 @@ end
 function stage1(d)
     # income parameters for Husbands
     dh1 = @subset(d,:edH.==1,:F_wage.>0)
-    mod = lm(@formula(log(F_wage) ~ F_AGE + F_AGE^2),dh1)
+    mod = reg(dh1,@formula(log(F_wage) ~ F_AGE + F_AGE^2))
     γ_YCH = coef(mod)
-    dh1[!,:eps] = residuals(mod)
+    dh1[!,:eps] = residuals(mod,dh1)
 
     dh0 = @subset(d,:edH.==0,:F_wage.>0)
-    mod = lm(@formula(log(F_wage) ~ F_AGE + F_AGE^2),dh0)
+    mod = reg(dh0,@formula(log(F_wage) ~ F_AGE + F_AGE^2))
     γ_YNH = coef(mod)
-    dh0[!,:eps] = residuals(mod)
+    dh0[!,:eps] = residuals(mod,dh0)
     
     ρ_ϵ,σ_η = get_ρ_σ([dh0;dh1])
 
     # ----  income parameters for Wives/Mothers
     γ_YCW = @chain d begin 
         @subset :edW.==1 :M_wage.>0
-        lm(@formula(log(M_wage) ~ exp2 + exp2^2),_)
+        reg(@formula(log(M_wage) ~ exp2 + exp2^2))
         coef(_)
     end
 
     γ_YNW = @chain d begin 
         @subset :edW.==0 :M_wage.>0
-        lm(@formula(log(M_wage) ~ exp2 + exp2^2),_)
+        reg(@formula(log(M_wage) ~ exp2 + exp2^2))
         coef(_)
     end
 
@@ -62,7 +62,7 @@ end
 
 # @chain D begin 
 #     @subset :edW.==0 :M_wage.>0
-#     lm(@formula(log(M_wage) ~ exp2 + exp2^2),_)
+#     reg(@formula(log(M_wage) ~ exp2 + exp2^2),_)
 # end
 
 # comparison with fixed effects
@@ -88,5 +88,5 @@ end
 
 # @chain d begin
 #     @subset :M_wage.>0 :edW.==0
-#     lm(@formula(log(M_wage) ~ exp2 + exp2^2 + pZ + pZ^2),_)
+#     reg(@formula(log(M_wage) ~ exp2 + exp2^2 + pZ + pZ^2),_)
 # end
