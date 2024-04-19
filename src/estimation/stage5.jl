@@ -27,7 +27,7 @@ function kidmoms_data(d)
     ma = testscore_averages(d).S
     sa = testscore_sd(d).sd
     k = construct_regression_data(d)
-    mod = lm(@formula(AP_raw ~ log(tau_m) + AP_lag ),k)
+    mod = reg(k,@formula(AP_raw ~ log(tau_m) + AP_lag ))
     mb = coef(mod)[2:3]
     return ma,sa,mb,wght
 end
