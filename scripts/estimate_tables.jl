@@ -123,7 +123,7 @@ for b in 1:50
     println(b)
     #θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
     #θ,θk = update_all((x1,x2,x3,x4,X5b[:,b]),θ,θk,F);
-    θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],x5),θ,θk,F);
+    θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
     mod = (θ,F,values=V)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     Db[:,b] = divorce_comparison(θk,θ,F,kid_data) 

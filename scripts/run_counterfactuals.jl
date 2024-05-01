@@ -44,41 +44,112 @@ kid_data = prep_child_data(sim_data,dat,cprobs);
 
 # get baseline stats
 stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,model)
-r1,r2 = divorce_standard_counterfactual(dat,model,θk,stats_baseline)
 
+r1,r2 = divorce_standard_counterfactual(dat,model,θk,stats_baseline)
+# do we have to reset the divorce standard after this? I think so.
+
+r1,r2 = custody_counterfactual(dat,model,θk,stats_baseline)
+
+
+r = child_support_counterfactual(dat,model,θk,stats_baseline)
 
 break
 
-(;VH1,VW1,VH2,VW2) = V;
-(;N_ϵ,N_ω,N_d) = F
-idx = LinearIndices((N_ϵ,N_ω,N_d,2,2,2))
-pL1,pL2,pL3,pL4,pL5,pD1,pD2,pD3,pF = interpolate_probs(V,F);
+dsim = gen_data_frame(model,dat)
 
-[pD1[1](3,i) for i in idx[3,:,2,1,2,:]]
+using StatsPlots
 
-[pD2[1](3,0,i) for i in idx[3,:,2,1,2,:]]
+# shows divorce policy, unlikely for couples without kids
+@chain dsim begin
+    @subset :AK.<18
+    @transform :kids = :AK.>=0
+    groupby([:kids,:omega])
+    @combine :pD = mean(:pD)
+    #@transform :eW = Int64.(:eW)
+    @df plot(:omega,:pD,group=:kids)#,color = :kids)
+end
 
-VH1[3,idx[2,:,2,2,1,1],1]
+# divorce probability with experience
+@chain dsim begin
+    @subset :AK.<18
+    @transform :kids = :AK.>=0
+    groupby([:kids,:exp])
+    @combine :pD = mean(:pD)
+    #@transform :eW = Int64.(:eW)
+    @df plot(:exp,:pD,group=:kids)#,color = :kids)
+end
 
-VW1[3,idx[3,:,2,1,2,:],1]
+# divorce probability with age (shows that all action without kids is to do with age)
+@chain dsim begin
+    @subset :AK.<18 :AW.<50
+    @transform :kids = :AK.>=0
+    groupby([:kids,:AW])
+    @combine :pD = mean(:pD)
+    #@transform :eW = Int64.(:eW)
+    @df plot(:AW,:pD,group=:kids)#,color = :kids)
+end
 
-VH2[3,1,idx[3,:,2,1,1,:],1]
 
-d,se = child_skill_outcomes(θk,θ,F,kid_data)
-# check
-average_welfare(model,dat)
+@chain dsim begin
+    @subset :AK.<0 :AW.<35 #:pD.>0.1
+    #@combine :m = maximum(:pD)
+end
 
-# check
-model_stats(model,dat)
 
-# check
+@chain dsim begin
+    groupby([:eW,:omega])
+    @combine :FT = mean(:FT)
+    @transform :eW = Int64.(:eW)
+    @df plot(:omega,:FT,group=:eW,color = :eW)
+end
 
-divorce_standard_counterfactual(dat,model,θk,stats_baseline)
+@chain dsim begin
+    @subset :AK.<18
+    @transform :kids = :AK.>=0
+    groupby([:kids,:omega])
+    @combine :FT = mean(:FT)
+    #@transform :eW = Int64.(:eW)
+    @df plot(:omega,:FT,group=:kids)#,color = :kids)
+end
 
-dat = prep_sim_data(M,P;R = 10)
-custody_counterfactual(dat,model,θk)
 
-child_support_counterfactual(dat,model,θk)
+
+# shows an increase in labor supply approach divorce
+@chain dsim begin
+    @subset :tsd.>-5 :tsd.<5
+    groupby([:eW,:tsd])
+    @combine :FT = mean(:FT)
+    @transform :eW = Int64.(:eW)
+    @df plot(:tsd,:FT,group=:eW,color = :eW)
+end
+
+# same figure by fertility status instead of education
+@chain dsim begin
+    @transform :kids = :AK.>=0
+    @subset :tsd.>-5 :tsd.<5
+    groupby([:kids,:tsd])
+    @combine :FT = mean(:FT)
+    #@transform :eW = Int64.(:eW)
+    @df plot(:tsd,:FT,group=:kids)#,color = :kids)
+end
+
+
+# shows a child penalty in full-time work
+@chain dsim begin
+    @subset :tsf.>-8 :tsf.<10
+    groupby([:eW,:tsf])
+    @combine :FT = mean(:FT)
+    @transform :eW = Int64.(:eW)
+    @df plot(:tsf,:FT,group=:eW,color = :eW)
+end
+
+@chain dsim begin
+    @subset :tsf.>-8 :tsf.<10
+    groupby([:eW,:eH,:tsf])
+    @combine :FT = mean(:FT)
+    @transform :eW = Int64.((:eW .- 1)*2 .+ :eH)
+    @df plot(:tsf,:FT,group=:eW)# ,color = :eW)
+end
 
 
 function model_stats(mod,dat;seed=1234)

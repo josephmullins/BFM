@@ -8,10 +8,32 @@ function compare_stats(stats1,stats0,β)
     return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
 end
 
+function bootstrap_counterfactual(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
+    (θ,F) = mod
+    B = size(X1b,2)
+    Δdiv = zeros(B)
+    Δskill = zeros(B)
+    Δlogwage = zeros(B)
+    ΔwH = zeros(B)
+    ΔwW = zeros(B)
+    for b in 1:50
+        println(b)
+        θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
+        mod = (;mod...,θ)
+        # get baseline stats (write a function here?)
+
+        # run counterfactuals
+
+        # save the result in the buffers above
+    end
+    # return the full thing or just the standard devs?
+    
+end
+
 function divorce_standard_counterfactual(dat,mod,θk,stats0)
     (;θ) = mod
     (;cprobs, β) = θ
-
+    l0 = copy(dat.legal)
     # all mutual consent
     dat.legal[:] .= 1
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
@@ -24,57 +46,46 @@ function divorce_standard_counterfactual(dat,mod,θk,stats0)
     stats_ul = counterfactual_statistics(kid_data,dat,θ,θk,mod)
     r2 = compare_stats(stats_ul,stats0,β)
 
+    # reset legal environment
+    dat.legal[:] .= l0[:]
+
     return r1,r2
 end
 
-function custody_counterfactual(dat,mod,θk)
+function custody_counterfactual(dat,mod,θk,stats0)
     (;θ,F) = mod
     (;cprobs, β) = θ
 
     # sole maternal custody
-    cprobs0 = [1.,0.,0.,0.,0.]
-    θ = update_Cτ(θ,F.τgrid,cprobs0)
-    mod = (;mod...,θ)
-    sim_data,kid_data = full_simulation(dat,mod,cprobs0)
-    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-
-    # complete split
-    cprobs1 = [0.,0.,0.,0.,1.]
+    cprobs1 = [1.,0.,0.,0.,0.]
     θ = update_Cτ(θ,F.τgrid,cprobs1)
     mod = (;mod...,θ)
     sim_data,kid_data = full_simulation(dat,mod,cprobs1)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
-    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
-    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
-    Δlogwage = stats1.log_wage - stats0.log_wage
-    Δfert = stats1.fertility - stats0.fertility
-    Δdiv = stats1.divorce - stats0.divorce
-    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
-    return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+    # complete split
+    cprobs2 = [0.,0.,0.,0.,1.]
+    θ = update_Cτ(θ,F.τgrid,cprobs2)
+    mod = (;mod...,θ)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs2)
+    stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
+    r1 = compare_stats(stats1,stats0,β)
+    r2 = compare_stats(stats2,stats0,β)
+    return r1,r2
 end
 
-function child_support_counterfactual(dat,mod,θk)
+function child_support_counterfactual(dat,mod,θk,stats0)
     (;θ, F) = mod
     (;cprobs, β) = θ
-    # baseline
-    sim_data,kid_data = full_simulation(dat,mod,cprobs)
-    stats0 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-
+ 
     # increase child support to 50% (??) did I set this too high to begin with??
-    F = (;F...,π_H = 0.5)
+    F = (;F...,π_H = 0.15)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-
-    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
-    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
-    Δlogwage = stats1.log_wage - stats0.log_wage
-    Δfert = stats1.fertility - stats0.fertility
-    Δdiv = stats1.divorce - stats0.divorce
-    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
-    return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
+    r = compare_stats(stats0,stats1,β)
+    return r
 end
 
 
