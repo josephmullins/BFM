@@ -131,7 +131,3 @@ end
 dse = std(Db,dims=2)
 
 write_decomposition(d,dse)
-
-# calculate outcomes for bilateral vs unilateral (easy, just through L)
-
-# calculate outcomes for child support

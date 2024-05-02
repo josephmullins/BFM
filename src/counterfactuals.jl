@@ -8,26 +8,36 @@ function compare_stats(stats1,stats0,β)
     return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
 end
 
-function bootstrap_counterfactual(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
+# there are four: the divorce standard (2 of these), the custody standard (2) and child support (1)
+
+function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
     (θ,F) = mod
-    B = size(X1b,2)
-    Δdiv = zeros(B)
-    Δskill = zeros(B)
-    Δlogwage = zeros(B)
-    ΔwH = zeros(B)
-    ΔwW = zeros(B)
-    for b in 1:50
+    (;cprobs) = θ
+    mc = []
+    unil = []
+    mcust = []
+    ptcust = []
+    childsupp1 = []
+    childsupp2 = []
+    for b in axes(X1b,2)
         println(b)
         θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
         mod = (;mod...,θ)
-        # get baseline stats (write a function here?)
+        sim_data,kid_data = full_simulation(dat,mod,cprobs)
+        stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
         # run counterfactuals
-
-        # save the result in the buffers above
+        r1,r2 = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
+        push!(unil,r1)
+        push!(mc,r2)
+        r1,r2 = custody_counterfactual(dat,mod,θk,stats_baseline)
+        push!(mcust,r1)
+        push!(ptcust,r2)
+        r1,r2 = child_support_counterfactual(dat,mod,θk,stats_baseline)
+        push!(childsupp1,r1)
+        push!(childsupp2,r2)
     end
-    # return the full thing or just the standard devs?
-    
+    return mc,unil,mcust,ptcust,childsupp1,childsupp2
 end
 
 function divorce_standard_counterfactual(dat,mod,θk,stats0)
@@ -64,7 +74,7 @@ function custody_counterfactual(dat,mod,θk,stats0)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
     # complete split
-    cprobs2 = [0.,0.,0.,0.,1.]
+    cprobs2 = [0.,0.,1.,0.,0.]
     θ = update_Cτ(θ,F.τgrid,cprobs2)
     mod = (;mod...,θ)
     sim_data,kid_data = full_simulation(dat,mod,cprobs2)
@@ -84,8 +94,15 @@ function child_support_counterfactual(dat,mod,θk,stats0)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r = compare_stats(stats0,stats1,β)
-    return r
+    r1 = compare_stats(stats0,stats1,β)
+
+    F = (;F...,π_H = 0.5)
+    mod = (;mod...,F)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    r2 = compare_stats(stats2,stats1,β)
+
+    return r1,r2
 end
 
 
