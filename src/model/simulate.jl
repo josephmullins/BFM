@@ -285,3 +285,177 @@ function full_simulation(dat,mod,cprobs)
     kid_data = prep_child_data(sim_data,dat,cprobs);
     return sim_data,kid_data
 end
+
+# this function generates a more detailed dataset than we need for estimating the model
+# it returns additional info as a dataframe
+function gen_data_frame(mod,dat;seed=1234)
+    (;values,θ,F) = mod
+    (;Π_ϵ,Π_ω) = θ
+    (;N_ϵ,N_t,N_ω,A_bar,N_d,T_f) = F
+    # = MersenneTwister(seed)
+    Random.seed!(seed)
+    # interpolate choice probabilities
+    pL1,pL2,pL3,pL4,pL5,pD1,pD2,pD3,pF = interpolate_probs(values,F)
+    idx = LinearIndices((N_ϵ,N_ω,N_d,2,2,2))
+    πϵ = [Categorical(Π_ϵ[ϵi,:]) for ϵi=1:N_ϵ]
+    πϵ0 = eigvecs(I(N_ϵ) .- Π_ϵ')[:,1]
+    πϵ0 ./= sum(πϵ0)
+    πϵ_init = Categorical(πϵ0)
+
+    πω = [Categorical(Π_ω[ωi,:]) for ωi=1:N_ω]
+    πω0 = Categorical(fill(1/N_ω,N_ω))
+    N = size(dat.edW,1)
+    TD = zeros(Int64,N)
+    TF = zeros(Int64,N)
+    NT = length(dat.legal)
+    L_sim = zeros(NT)
+    Ω_sim = zeros(NT)
+    κ_sim = zeros(NT)
+    pFT_sim = zeros(NT)
+    pPT_sim = zeros(NT)
+    pD_sim = zeros(NT)
+    pF_sim = zeros(NT)
+    AK_sim = zeros(NT)
+    AW_sim = zeros(NT)
+    eW_sim = zeros(NT)
+    eH_sim = zeros(NT)
+    ϵ_sim = zeros(NT)
+
+    D = zeros(Bool,NT)
+    nt = 1
+    for n in 1:N
+        eW = dat.edW[n]
+        eH = dat.edH[n]
+        ad = dat.AD[n]
+        adi = 1 + (ad>-5) + (ad>5)
+        aw0 = dat.AW0[n]
+        maxT = dat.tlength[n]
+        κ = dat.κ[n]
+        #ωt = N_ω #<- everyone starts at the highest draw (an alternative assumption)
+        ωt = rand(πω0) 
+        ϵt = rand(πϵ_init) 
+        tM = 1
+        ttF = 9999
+        ttD = 9999
+        stage = 1
+        AK = -1
+        for t in 1:maxT
+            l = dat.legal[nt]
+            Ω_sim[nt] = ωt
+            eW_sim[nt] = eW
+            eH_sim[nt] = eH
+            ϵ_sim[nt] = ϵt
+            κ_sim[nt] = κ
+            AW_sim[nt] = aw0+t-1
+            tt = aw0+t-18
+            #println(n," ",stage," ",tt)
+            if stage==1
+                # birth decisions
+                #println("hi")
+                i = idx[ϵt,ωt,adi,eH,eW,l]
+                pF_sim[nt] = pF[tt](κ,i)
+                if rand()<pF[tt](κ,i)
+                    stage=2
+                    AK = 0
+                    ttF = t
+                else
+                    pD = pD1[tt](κ,i)
+                    pD_sim[nt] = pD
+                    if rand()<pD
+                        stage=5
+                        ttD = t
+                    else
+                        p1 = pL1[tt](1,κ,i)
+                        p2 = pL1[tt](2,κ,i)
+                        L = draw_L(rand(),p1,p2)
+                        L_sim[nt] = L
+                        κ += L==2
+                    end
+                end
+            end
+            AK_sim[nt] = AK
+            if stage==2
+                i = idx[ϵt,ωt,adi,eH,eW,l]
+                pD = pD2[tt](κ,AK,i)
+                pD_sim[nt] = pD
+                if rand()<pD
+                    stage=4
+                    ttD = t
+                else
+                    p1 = pL2[tt](1,κ,AK,i)
+                    p2 = pL2[tt](2,κ,AK,i)
+                    L = draw_L(rand(),p1,p2)
+                    L_sim[nt] = L
+                    
+                
+                    κ += L==2
+                end
+            end
+            if stage==3
+                i = idx[ϵt,ωt,adi,eH,eW,l]
+                pD = pD3[tt](κ,i)
+                pD_sim[nt] = pD
+                if rand()<pD
+                    stage=5
+                    ttD = t
+                else
+                    p1 = pL3[tt](1,κ,i)
+                    p2 = pL3[tt](2,κ,i)
+                    L = draw_L(rand(),p1,p2)
+                    L_sim[nt] = L
+                    
+                
+                    κ += L==2
+                end
+            end
+            
+            if stage==4
+                p1 = pL4[tt](1,eW,eH,ad,ϵt,κ,AK)
+                p2 = pL4[tt](2,eW,eH,ad,ϵt,κ,AK)
+                L = draw_L(rand(),p1,p2)
+                L_sim[nt] = L                
+                κ += L==2
+            end
+            if stage==5
+                p1 = pL5[tt](1,eW,κ)
+                p2 = pL5[tt](2,eW,κ)
+                L = draw_L(rand(),p1,p2)
+                L_sim[nt] = L
+                
+            
+                κ += L==2
+            end
+            pPT_sim[nt] = p1
+            pFT_sim[nt] = p2
+            # final updates on stages
+            if (stage==1) & (tt==T_f-1)
+                stage = 3
+            end
+            if stage==2
+                if AK==A_bar-1
+                    stage = 3
+                else
+                    AK += 1
+                end
+            end
+            if stage==4
+                if AK==A_bar-1
+                    stage = 5
+                else
+                    AK += 1
+                end
+            end
+            # draw new shocks
+            D[nt] = stage>=4
+            ϵt = rand(πϵ[ϵt])
+            ωt = rand(πω[ωt])
+            nt += 1
+        end
+        TD[n] = ttD-1
+        TF[n] = ttF-1
+        #println(tF," ",tD)
+    end
+    tsd = get_tsd(TD,dat)
+    tsf = get_tsd(TF,dat)
+    return DataFrame(;tsd,tsf,omega=Ω_sim,D,pD=pD_sim,pF=pF_sim,PT = pPT_sim,FT = pFT_sim,eW=eW_sim,eH=eH_sim,AK=AK_sim,wage_shock=ϵ_sim,exp = κ_sim,AW = AW_sim)
+end
