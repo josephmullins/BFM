@@ -68,13 +68,14 @@ end
 end
 
 
-# just look at conventional measures of differences here
+# just look at conventional measures of differences here. 
+# they are there but marginal
 
 @chain K begin
-    @subset :AGE.>15
-    @subset .!ismissing.(:AP_raw)
+    @subset :AGE.>14
+    @subset .!ismissing.(:AP_std)
     groupby(:dgroup)
-    @combine :m = mean(:AP_raw) :se = std(:AP_raw) :N = sum(.!ismissing.(:AP_raw))
+    @combine :m = mean(:AP_std) :se = std(:AP_std) :N = sum(.!ismissing.(:AP_raw))
     @transform :sd = :se ./ sqrt.(:N)
 end
 
