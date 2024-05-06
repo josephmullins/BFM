@@ -13,7 +13,7 @@ ggsave("output/figures/factor_shares.png",g,width=5,height=3)
 d <- read_csv("output/rel_tfp.csv")
 
 g <- d %>%
-  ggplot(aes(x=MarriageQuality,y=TFP,ymin=TFP-1*se,ymax=TFP+1*se)) + geom_errorbar(width=0.2) + 
+  ggplot(aes(x=MarriageQuality,y=TFP,ymin=TFP-1.96*se,ymax=TFP+1.96*se)) + geom_errorbar(width=0.2) + 
   geom_line() + geom_point() + geom_hline(yintercept=0,linetype="dashed") + 
   theme_minimal() + ylab("TFP - Married relative to Divorced") + xlab("Marriage Quality")
 ggsave("output/figures/relative_TFP.png",g,width=4,height=3)

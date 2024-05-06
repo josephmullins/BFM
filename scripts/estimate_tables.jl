@@ -111,26 +111,50 @@ end
 
 d = divorce_comparison(θk,θ,F,kid_data)
 
-function full_simulation(dat,mod,cprobs)
-    solve_all!(mod)
-    sim_data = data_gen(mod,dat)
-    kid_data = prep_child_data(sim_data,dat,cprobs);
-    return sim_data,kid_data
+function bootstrap_skilldecomp(Xb,mod,θk)
+    (;θ,F) = mod
+    X1b,X2b,X3b,X4b,X5b = Xb
+    B = size(X1b,2)
+    Db = zeros(4,B)
+    θ,θk = update_all((X1b[:,1],X2b[:,1],X3b[:,1],X4b[:,1],X5b[:,1]),θ,θk,F);
+    for b in axes(X1b,2)
+        println(b)
+        θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
+        mod = (;mod...,θ)
+        sim_data,kid_data = full_simulation(dat,mod,θ.cprobs)
+        Db[:,b] = divorce_comparison(θk,θ,F,kid_data)     
+    end
+    #return std(Db,dims=2)
+    #return [(quantile(Db[s,:],0.025),quantile(Db[s,:],0.975)) for s in axes(Db,1)]
+    return Db
 end
 
-Db = zeros(4,50)
-for b in 1:50
-    println(b)
-    #θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
-    #θ,θk = update_all((x1,x2,x3,x4,X5b[:,b]),θ,θk,F);
-    θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],x5),θ,θk,F);
-    mod = (θ,F,values=V)
-    sim_data,kid_data = full_simulation(dat,mod,cprobs)
-    Db[:,b] = divorce_comparison(θk,θ,F,kid_data) 
-end
-dse = std(Db,dims=2)
+dse = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),mod,θk)
 
-write_decomposition(d,dse)
+function bootstrap_skilldecomp(Xb,x5,mod,θk)
+    (;θ,F) = mod
+    X1b,X2b,X3b,X4b,X5b = Xb
+    B = size(X1b,2)
+    Db = zeros(4,B)
+    θ,θk = update_all((X1b[:,1],X2b[:,1],X3b[:,1],X4b[:,1],x5),θ,θk,F);
+    for b in axes(X1b,2)
+        println(b)
+        x5b = X5b[:,b] 
+        # γ_ψ0 = x5[1]
+        # γ_ψ = x5[2:5]
+        # x5b[4] = x5[4]
+        x5b[2:3] = x5[2:3]
+        θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],x5b),θ,θk,F);
+        mod = (;mod...,θ)
+        sim_data,kid_data = full_simulation(dat,mod,θ.cprobs)
+        Db[:,b] = divorce_comparison(θk,θ,F,kid_data)     
+    end
+    return std(Db,dims=2)
+end
+
+dse2 = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),x5,mod,θk)
+
+#write_decomposition(d,dse)
 
 # calculate outcomes for bilateral vs unilateral (easy, just through L)
 
