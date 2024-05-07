@@ -34,14 +34,14 @@ X5b = readdlm("output/boot_stage5")
 
 θk = (;θk...,ρ = θ.ρ)
 
-function rerun_stage5(x,x5_0,mod,θk,data,panel,kid_data; show_trace=true, seed = 20240220)
+function rerun_stage5(x,x5_0,mod,θk,data,panel,kid_data; num_iter = 500, show_trace=true, seed = 20240220)
     (x1,x2,x3,x4,x5) = x
     (;θ,F) = mod
     θ,θk = update_all((x1,x2,x3,x4,x5),θ,θk,F)
     mod = (;mod...,θ)
     solve_all!(mod)
     dat = prep_sim_data(data,panel;R = 10)
-    θk = stage5(x5_0, θk, mod, dat, kid_data; num_iter=500, show_trace, seed)
+    θk = stage5(x5_0, θk, mod, dat, kid_data; num_iter, show_trace, seed)
     return θk
 end
 
@@ -50,7 +50,7 @@ model = (;θ,values=V,F)
 
 x5_0 = [-15.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(12.)]
 
-θk = rerun_stage5((x1,x2,x3,x4,x5),x5_0,model,θk,M,P,K)
+θk = rerun_stage5((x1,x2,x3,x4,x5),x5_0,model,θk,M,P,K; num_iter = 1000)
 x1,x2,x3,x4,x5 = stack_ests(θ,θk)
 x5_1 = get_xk(θk) #<- for the remaining bootstrap trials
 
