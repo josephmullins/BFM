@@ -67,6 +67,7 @@ formse(x) = string("(",@sprintf("%0.2f",x),")")
 formci(x) = string("[",@sprintf("%0.2f",x[1])," ",@sprintf("%0.2f",x[2]),"]")
 form3(x) = @sprintf("%0.3f",x) #<- print to 2 digits
 form3se(x) = string("(",@sprintf("%0.3f",x),")")
+form3ci(x) = string("[",@sprintf("%0.3f",x[1])," ",@sprintf("%0.3f",x[2]),"]")
 # a helper function to write a collection of strings into separate columns
 function tex_delimit(x)
     str = x[1]
