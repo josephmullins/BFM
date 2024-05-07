@@ -1,10 +1,10 @@
 function compare_stats(stats1,stats0,β)
-    ΔwH = exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1
-    ΔwW = exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1
-    Δlogwage = stats1.log_wage - stats0.log_wage
-    Δfert = stats1.fertility - stats0.fertility
-    Δdiv = stats1.divorce - stats0.divorce
-    Δskill = (stats1.decomp .- stats0.decomp) / stats0.se
+    ΔwH = 100 * (exp((1-β) * (stats1.welf_H - stats0.welf_H)) - 1)
+    ΔwW = 100 * (exp((1-β) * (stats1.welf_W - stats0.welf_W)) - 1)
+    Δlogwage = 100 * (stats1.log_wage - stats0.log_wage)
+    Δfert = 100 * (stats1.fertility - stats0.fertility)
+    Δdiv = 100 * (stats1.divorce - stats0.divorce)
+    Δskill = 100 * ((stats1.decomp .- stats0.decomp) / stats0.se)
     return (;ΔwH,ΔwW,Δlogwage,Δfert,Δdiv,Δskill)
 end
 
@@ -28,8 +28,8 @@ function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
 
         # run counterfactuals
         r1,r2 = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
-        push!(unil,r1)
-        push!(mc,r2)
+        push!(mc,r1)
+        push!(unil,r2)
         r1,r2 = custody_counterfactual(dat,mod,θk,stats_baseline)
         push!(mcust,r1)
         push!(ptcust,r2)

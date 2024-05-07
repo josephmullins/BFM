@@ -59,7 +59,7 @@ mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfac
 
 
 function write_counterfactuals_table(results,boot,filename)
-    stat_names = ["\\% CEV Husbands","\\%CEV Wives","\$\\Delta\$ Wives' log-wages","\$\\Delta\$ Fertility","\$\\Delta\$ Divorce"]
+    stat_names = ["\\% CEV Husbands","\\% CEV Wives","\$\\Delta\$ Wife log-wage (\$\\times\$ 100)","\$\\Delta\$ Fertility (\\%)","\$\\Delta\$ Divorce (\\%)"]
     field_names = [:ΔwH,:ΔwW,:Δlogwage,:Δfert,:Δdiv,:Δskill]
     file = open("output/tables/"*filename,"w")
 
@@ -78,7 +78,7 @@ function write_counterfactuals_table(results,boot,filename)
         write(file," \\\\ \n")
     end
 
-    stat_names = ["\$\\Delta\$ Skill","\\hspace{5pt}\$\\Delta\$ TFP","\\hspace{5pt}\$\\Delta\$ Mother's Time","\\hspace{5pt}\$\\Delta\$ Father's Time"]
+    stat_names = ["\$\\Delta\$ Skill (\\% sd)","\\hspace{10pt}\$\\Delta\$ TFP","\\hspace{10pt}\$\\Delta\$ Mother's Time","\\hspace{10pt}\$\\Delta\$ Father's Time"]
     for r in eachindex(stat_names)
         write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
         for cr in results
@@ -96,10 +96,6 @@ function write_counterfactuals_table(results,boot,filename)
 
     close(file)
 end
-
-# results = (mc,unil,mcust,ptcust,childsupp1,childsupp2)
-# boot = (mc_boot,unil_boot,mc_boot,pt_boot,cs1_boot,cs2_boot)
-# write_counterfactuals_table(results,boot)
 
 write_counterfactuals_table((mc,unil),(mc_boot,unil_boot),"divorce_standard.tex")
 write_counterfactuals_table((mcust,ptcust),(mcust_boot,pcust_boot),"custody_standard.tex")
