@@ -56,10 +56,12 @@ x5_1 = get_xk(θk) #<- for the remaining bootstrap trials
 
 writedlm("output/est_stage5",x5)
 
-for b in 1:1 # axes(X5b)
+for b in axes(X5b,2)
     @show "doing trial $b"
     Random.seed!(1010+b)
     Mb,Pb,Kb = draw_boot_sample(M,P,K)
-    θk = rerun_stage5((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),x5_1,model,θk,Mb,Pb,Kb ; show_trace = true, seed = 3030+b)
+    θk = rerun_stage5((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),x5_1,model,θk,Mb,Pb,Kb ; show_trace = false, seed = 3030+b)
     _,_,_,_,X5b[:,b] = stack_ests(θ,θk)
 end
+
+writedlm("output/boot_stage5",X5b)
