@@ -14,7 +14,8 @@ V = values(F);
 θk = prod_pars()
 
 x4_0 = readdlm("output/Xsave_round2_old")[:,1] #<- can't do better than this.
-x5_0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
+#x5_0 = [-20.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(20.)]
+x5_0 = [-15.,0.75,0.75,0.05,0.00,2.5,log(0.2),log(0.7),log(12.)] #<- slightly better guess
 
 θ,θk = estimate_model(x4_0, x5_0, θ, θk, V, F, M, P, K ; R = 10, num_iter = 1000, show_trace = true)
 
