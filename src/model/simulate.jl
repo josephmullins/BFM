@@ -204,7 +204,7 @@ function prep_child_data(sim_data,dat,cprobs;seed=131332)
                 push!(Csim,0)
             end
             if TD[n]<9998
-                g = 2 .+ ( ak .>= (TD[n]-TF[n]) ) #<- latter part true only if divorced by age a
+                g = 3 .- ( ak .>= (TD[n]-TF[n]) ) #<- latter part true only if divorced by age a
                 push!(G,g...)
             else
                 push!(G,fill(1,tlength)...)

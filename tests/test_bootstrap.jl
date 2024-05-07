@@ -56,3 +56,8 @@ mod = (;θ,values=V,F)
 
 θk = stage5(x5_0, θk, mod, dat, Kb; num_iter=1000, show_trace=true, seed = seed5)
 
+# what do we need to run stage 5:
+# - the bootstrapped data
+# - the other estimates.
+# - that's it. I think we can handle that?
+# - run code to do this?
