@@ -64,6 +64,7 @@ end
 
 form(x) = @sprintf("%0.2f",x) #<- print to 2 digits
 formse(x) = string("(",@sprintf("%0.2f",x),")")
+formci(x) = string("[",@sprintf("%0.2f",x[1])," ",@sprintf("%0.2f",x[2]),"]")
 form3(x) = @sprintf("%0.3f",x) #<- print to 2 digits
 form3se(x) = string("(",@sprintf("%0.3f",x),")")
 # a helper function to write a collection of strings into separate columns
@@ -156,9 +157,9 @@ end
 function write_decomposition(d,dse)
     str = ["Total","TFP","Mother's Time","Father's Time"]
     file = open("output/tables/skill_decomposition.tex","w")
-    write(file,"Input & Estimate & (Std Error) \\\\ \\cmidrule(r){1-3} \n")
+    write(file,"Input & Estimate & Conf. Interval \\\\ \\cmidrule(r){1-3} \n")
     for r in eachindex(str)
-        write(file,str[r]," & ",form(d[r])," & ",formse(dse[r])," \\\\ \n")
+        write(file,str[r]," & ",form(d[r])," & ",formci(dse[r])," \\\\ \n")
     end
     close(file)
 end

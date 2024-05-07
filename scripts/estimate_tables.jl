@@ -131,30 +131,8 @@ end
 
 dse = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),mod,θk)
 
-function bootstrap_skilldecomp(Xb,x5,mod,θk)
-    (;θ,F) = mod
-    X1b,X2b,X3b,X4b,X5b = Xb
-    B = size(X1b,2)
-    Db = zeros(4,B)
-    θ,θk = update_all((X1b[:,1],X2b[:,1],X3b[:,1],X4b[:,1],x5),θ,θk,F);
-    for b in axes(X1b,2)
-        println(b)
-        x5b = X5b[:,b] 
-        # γ_ψ0 = x5[1]
-        # γ_ψ = x5[2:5]
-        # x5b[4] = x5[4]
-        x5b[2:3] = x5[2:3]
-        θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],x5b),θ,θk,F);
-        mod = (;mod...,θ)
-        sim_data,kid_data = full_simulation(dat,mod,θ.cprobs)
-        Db[:,b] = divorce_comparison(θk,θ,F,kid_data)     
-    end
-    return std(Db,dims=2)
-end
-
-dse2 = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),x5,mod,θk)
-
-write_decomposition(d,dse)
+ci = [(quantile(dse[s,:],0.05),quantile(dse[s,:],0.95)) for s in axes(dse,1)]
+write_decomposition(d,ci)
 
 # calculate outcomes for bilateral vs unilateral (easy, just through L)
 
