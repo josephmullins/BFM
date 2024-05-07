@@ -11,7 +11,7 @@ end
 # there are four: the divorce standard (2 of these), the custody standard (2) and child support (1)
 
 function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
-    (θ,F) = mod
+    (;θ,F) = mod
     (;cprobs) = θ
     mc = []
     unil = []
@@ -89,7 +89,7 @@ function child_support_counterfactual(dat,mod,θk,stats0)
     (;θ, F) = mod
     (;cprobs, β) = θ
  
-    # increase child support to 50% (??) did I set this too high to begin with??
+    # increase child support to 50% (??) 
     F = (;F...,π_H = 0.15)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)

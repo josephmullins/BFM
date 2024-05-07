@@ -53,28 +53,60 @@ mcust,ptcust = custody_counterfactual(dat,model,θk,stats_baseline)
 
 childsupp1,childsupp2 = child_support_counterfactual(dat,model,θk,stats_baseline)
 
+mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,dat,θk)
 
+# a function for writing everything
+
+
+function write_counterfactuals_table(results,boot,filename)
+    stat_names = ["\\% CEV Husbands","\\%CEV Wives","\$\\Delta\$ Wives' log-wages","\$\\Delta\$ Fertility","\$\\Delta\$ Divorce"]
+    field_names = [:ΔwH,:ΔwW,:Δlogwage,:Δfert,:Δdiv,:Δskill]
+    file = open("output/tables/"*filename,"w")
+
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,field_names[r])
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,field_names[r]) for b in cb],0.05)
+            ub = quantile([getfield(b,field_names[r]) for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    stat_names = ["\$\\Delta\$ Skill","\\hspace{5pt}\$\\Delta\$ TFP","\\hspace{5pt}\$\\Delta\$ Mother's Time","\\hspace{5pt}\$\\Delta\$ Father's Time"]
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,:Δskill)[r]
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,:Δskill)[r] for b in cb],0.05)
+            ub = quantile([getfield(b,:Δskill)[r] for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    close(file)
+end
+
+# results = (mc,unil,mcust,ptcust,childsupp1,childsupp2)
+# boot = (mc_boot,unil_boot,mc_boot,pt_boot,cs1_boot,cs2_boot)
+# write_counterfactuals_table(results,boot)
+
+write_counterfactuals_table((mc,unil),(mc_boot,unil_boot),"divorce_standard.tex")
+write_counterfactuals_table((mcust,ptcust),(mcust_boot,pcust_boot),"custody_standard.tex")
+write_counterfactuals_table((childsupp1,childsupp2),(cs1_boot,cs2_boot),"child_support.tex")
 
 break
 
-function test_func()
-    return (;a = rand(), b = rand(2))
-end
-
-a = [test_func(),test_func()]
-
-push!(a,test_func())
-function test_boot()
-    R = []
-    for b in 1:10
-        r = test_func()
-        push!(R,r)
-    end
-    R
-end
-
-
-dsim = gen_data_frame(model,dat)
 
 using StatsPlots
 
