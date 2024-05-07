@@ -154,7 +154,7 @@ end
 
 dse2 = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),x5,mod,θk)
 
-#write_decomposition(d,dse)
+write_decomposition(d,dse)
 
 # calculate outcomes for bilateral vs unilateral (easy, just through L)
 

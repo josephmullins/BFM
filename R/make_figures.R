@@ -21,7 +21,7 @@ ggsave("output/figures/relative_TFP.png",g,width=4,height=3)
 # fit of test scores
 d <- read_csv("output/modelfit_testcores.csv")
 g <- d %>%
-  mutate(group = case_when(Dgroup==1 ~ "Never Divorce",Dgroup==2 ~ "Will Divorce",Dgroup==3 ~ "Divorced")) %>%
+  mutate(group = case_when(Dgroup==1 ~ "Never Divorce",Dgroup==2 ~ "Divorced",Dgroup==3 ~ "Will Divorce")) %>%
   ggplot(aes(x=Age,y=value,linetype=case,color=group)) + geom_line() + 
   theme_minimal() + theme(legend.position="bottom",legend.title = element_blank()) + 
   ylab("Average AP Test Score")
@@ -29,7 +29,7 @@ ggsave("output/figures/modelfit_testscores.png",g,width=4.5,height=3.8)
 
 d <- read_csv("output/modelfit_testcores_relative.csv")
 g <- d %>%
-  mutate(group = case_when(Dgroup==1 ~ "Never Divorce",Dgroup==2 ~ "Will Divorce",Dgroup==3 ~ "Divorced")) %>%
+  mutate(group = case_when(Dgroup==1 ~ "Never Divorce",Dgroup==2 ~ "Divorced",Dgroup==3 ~ "Will Divorce")) %>%
   ggplot(aes(x=Age,y=value,linetype=case,color=group)) + geom_line() + 
   theme_minimal() + theme(legend.position="bottom",legend.title = element_blank()) + 
   ylab("Average AP score relative to Never Divorced group")
