@@ -16,6 +16,8 @@ V = values(F);
 θk = prod_pars()
 θse = Params(F)
 θkse = prod_pars()
+θk_lb = prod_pars()
+θk_ub = prod_pars()
 
 x1 = readdlm("output/est_stage1")[:]
 x2 = readdlm("output/est_stage2")[:]
@@ -36,9 +38,13 @@ se2 = std(X2b,dims=2)[:]
 se3 = std(X3b,dims=2)[:]
 se4 = std(X4b,dims=2)[:]
 se5 = std(X5b,dims=2)[:]
+lb5 = [quantile(X5b[r,:],0.05) for r in axes(X5b,1)]
+ub5 = [quantile(X5b[r,:],0.95) for r in axes(X5b,1)]
 
 # calculate standard errors and make a new θ
 θse,θkse = update_all((se1,se2,se3,se4,se5),θse,θkse,F);
+θse,θk_lb = update_all((se1,se2,se3,se4,lb5),θse,θk_lb,F);
+θse,θk_ub = update_all((se1,se2,se3,se4,ub5),θse,θk_ub,F);
 
 θk = (;θk...,ρ = θ.ρ)
 θkse = (;θkse...,ρ = θse.ρ)
@@ -49,8 +55,8 @@ write_prefs(θ,θse)
 write_production(θk,θkse)
 
 # ---- save estimates to file for making figures
-d = [DataFrame(Age = 0:17,Input = "Mother's Time", value = θk.δW, se = θkse.δW) ; 
-    DataFrame(Age = 0:17,Input = "Father's Time", value = θk.δH, se = θkse.δH) ]
+d = [DataFrame(Age = 0:17,Input = "Mother's Time", value = θk.δW, se = θkse.δW,lb = θk_lb.δW, ub = θk_ub.δW ) ; 
+    DataFrame(Age = 0:17,Input = "Father's Time", value = θk.δH, se = θkse.δH,lb = θk_lb.δH, ub = θk_ub.δH ) ]
 CSV.write("output/factor_shares.csv",d)
 
 tfp_boot = X5b[3,:] .+ X5b[4,:].*F.ω_grid'

@@ -5,7 +5,7 @@ library(tidyverse)
 d <- read_csv("output/factor_shares.csv")
 
 g <- d %>%
-  ggplot(aes(x=Age,y=value,ymin=value-1.96*se,ymax=value+1.96*se)) + geom_point() +
+  ggplot(aes(x=Age,y=value,ymin=lb,ymax=ub)) + geom_point() +
   geom_line() + geom_errorbar(width=0.5) + facet_grid(. ~ Input) + theme_minimal() + ylab("Factor Share")
 ggsave("output/figures/factor_shares.png",g,width=5,height=3)
 
