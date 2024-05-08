@@ -53,7 +53,7 @@ mcust,ptcust = custody_counterfactual(dat,model,θk,stats_baseline)
 
 childsupp1,childsupp2 = child_support_counterfactual(dat,model,θk,stats_baseline)
 
-mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,dat,θk)
+mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,M,P,K,θk)
 
 # a function for writing everything
 
@@ -103,7 +103,24 @@ write_counterfactuals_table((childsupp1,childsupp2),(cs1_boot,cs2_boot),"child_s
 
 break
 
+θ,θk = update_all((x1,x2,x3,x4,x5),θ,θk,F);
+mod = (;mod...,θ);
+sim_data,kid_data = full_simulation(dat,mod,cprobs);
+stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod);
 
+# run counterfactuals
+r1,r2 = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
+
+θ,θk = update_all((x1,x2,x3,x4,X5b[:,1]),θ,θk,F);
+mod = (;mod...,θ);
+sim_data,kid_data = full_simulation(dat,mod,cprobs);
+stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod);
+
+# run counterfactuals
+r1b,r2b = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
+
+
+break
 using StatsPlots
 
 # shows divorce policy, unlikely for couples without kids

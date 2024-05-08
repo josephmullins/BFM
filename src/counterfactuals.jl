@@ -10,7 +10,7 @@ end
 
 # there are four: the divorce standard (2 of these), the custody standard (2) and child support (1)
 
-function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
+function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,M,P,K,θk)
     (;θ,F) = mod
     (;cprobs) = θ
     mc = []
@@ -21,8 +21,17 @@ function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,dat,θk)
     childsupp2 = []
     for b in axes(X1b,2)
         println(b)
+        #x1,x2,x3,x4,_ = stack_ests(θ,θk)
         θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
+        # note: everything looks ok with only x2 and x3 fixed. checking those now.
+        # adding x2 recreates the issue, checking now x3
+        # x3 (fixing x2) also recreates the issue but to a lesser extent. why do these parameters matter so much?
+        #θ,θk = update_all((X1b[:,b],X2b[:,b],x3,X4b[:,b],X5b[:,b]),θ,θk,F);
+        #θ = update_Cτ(θ,F.τgrid,cprobs) #<- try updating Cτ
         mod = (;mod...,θ)
+        Random.seed!(1010+b)
+        Mb,Pb,_ = draw_boot_sample(M,P,K)
+        dat = prep_sim_data(Mb,Pb;R = 10)
         sim_data,kid_data = full_simulation(dat,mod,cprobs)
         stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod)
 
