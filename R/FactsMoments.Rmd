@@ -113,14 +113,20 @@ K %>%
 ```
 
 ```{r}
-K %>%
+g <- K %>%
   select(AGE,AP_raw,dgroup) %>%
   drop_na() %>%
   mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
   mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
   group_by(dgroup,age_group) %>%
   summarize(m = mean(AP_raw),se = sd(AP_raw)/sqrt(n())) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (raw)")
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank())
+
+g + ggtitle("Average AP score by Marital Status (raw)")
+ggsave("../output/figures/skill_patterns.png",g,width=5,height=4)
+
+
 ```
 
 ```{r}
@@ -141,40 +147,22 @@ g + ggtitle("Average AP score by Marital Status (standardized)")
 
 ```
 
-## Time Investment Patterns
-
 ```{r}
-m1 <- K %>%
-  select(AGE,tau_m,dgroup) %>%
+g <- K %>%
+  filter(TSS>-6,TSS<7) %>%
+  select(AGE,AP_raw,TSS) %>%
   drop_na() %>%
-  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
-  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
-  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
-  group_by(dgroup,age_group) %>%
-  summarize(m = mean(tau_m),se = sd(tau_m)/sqrt(n()))
-  
-  
-m1 %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) 
+  group_by(AGE) %>%
+  mutate(AP_std = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
+  group_by(TSS) %>%
+  summarize(m = mean(AP_std,na.rm = TRUE),se = sd(AP_std,na.rm = TRUE)/sqrt(n())) %>%
+  ggplot(aes(x=TSS,y=m,ymin=m-1.96*se,ymax=m+1.96*se)) + geom_line() + geom_errorbar()
 
-#g + ggtitle("Average AP score by Marital Status (standardized)")
-```
-```{r}
-K %>%
-  group_by(DIV,AGE) %>%
-  summarize(m = mean(tau_m,na.rm = TRUE)) %>%
-  ggplot(aes(x=AGE,y=m,color=DIV)) + geom_line()
-```
-
-Some regressions
-```{r}
-library(fixest)
-feols(tau_m ~ DIV | MID + AGE,K) %>% summary()
-feols(tau_f ~ DIV | MID + AGE,K) %>% summary()
+g + ggtitle("Average AP score by Time since Divorce (standardized)")
 ```
 
 
-## Comparison Using Separation instead of Divorce
+### Comparison Using Separation instead of Divorce
 
 ```{r}
 m1 <- K %>%
@@ -229,6 +217,91 @@ rbind(m1,m2) %>%
   ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.2)) + geom_errorbar(position = position_dodge(0.2),width=0.) + ggtitle("Average AP score by Marital Status (raw)") + facet_grid(. ~ case)
 ```
 
+## Time Investment Patterns
+
+### Basic patterns by age
+```{r}
+m1 <- K %>%
+  select(AGE,tau_m,DIV) %>%
+  drop_na() %>%
+  group_by(DIV,AGE) %>%
+  summarize(m = mean(tau_m),se = sd(tau_m)/sqrt(n())) %>%
+  mutate(var = "Mother's Time")
+
+m2 <- K %>%
+  select(AGE,tau_f,DIV) %>%
+  drop_na() %>%
+  group_by(DIV,AGE) %>%
+  summarize(m = mean(tau_f),se = sd(tau_f)/sqrt(n())) %>%
+  mutate(var = "Father's Time")
+
+rbind(m1,m2) %>%
+  ggplot(aes(x=AGE,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=DIV)) + geom_line() + facet_grid(. ~ var)
+
+```
+### Patterns by age and by finer group (to show some degree of selection)
+
+```{r}
+m1 <- K %>%
+  select(AGE,tau_m,dgroup) %>%
+  drop_na() %>%
+  group_by(dgroup,AGE) %>%
+  summarize(m = mean(tau_m),se = sd(tau_m)/sqrt(n())) %>%
+  mutate(var = "Mother's Time")
+
+m2 <- K %>%
+  select(AGE,tau_f,dgroup) %>%
+  drop_na() %>%
+  group_by(dgroup,AGE) %>%
+  summarize(m = mean(tau_f),se = sd(tau_f)/sqrt(n())) %>%
+  mutate(var = "Father's Time")
+
+rbind(m1,m2) %>%
+  ggplot(aes(x=AGE,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=as.factor(dgroup))) + geom_line() + facet_grid(. ~ var) + geom_errorbar(width=0)
+```
+
+## Patterns by age group and by divorce group
+
+```{r}
+m1 <- K %>%
+  select(AGE,tau_m,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_m),se = sd(tau_m)/sqrt(n())) %>%
+  mutate(var="Mother's Time")
+
+m2 <- K %>%
+  select(AGE,tau_f,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_f),se = sd(tau_f)/sqrt(n())) %>%
+  mutate(var="Father's Time")
+
+  
+g <- rbind(m1,m2) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
+
+g + ggtitle("Average AP score by Marital Status (standardized)")
+
+ggsave("../output/figures/time_patterns.png",g,width=5.5,height=4)
+
+
+
+```
+
+```{r}
+K %>%
+  group_by(DIV,AGE) %>%
+  summarize(m = mean(tau_m,na.rm = TRUE)) %>%
+  ggplot(aes(x=AGE,y=m,color=DIV)) + geom_line()
+```
+
 ## Wife's Labor Supply
 
 Here we look at changes in the wife's labor supply.
@@ -261,6 +334,73 @@ P %>%
   ggplot(aes(x=TSD,y=PT,ymin=PT-1.96*sd,ymax=PT+1.96*sd)) + geom_line() + geom_point() + geom_errorbar(width=0.)
 
 ```
+
+## Some Regressions
+
+### AP scores on divorce with fixed effects
+
+```{r}
+library(fixest)
+K %>%
+  group_by(AGE) %>%
+  mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
+  mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
+  feols(AP_std2 ~ SEP + div_exp | AGE + MID, data=.) %>%
+  summary()
+
+K %>%
+  group_by(AGE) %>%
+  mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
+  mutate(LW_std2 = (LW_raw - mean(LW_raw,na.rm = TRUE))/sd(LW_raw,na.rm=TRUE)) %>%
+  mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
+  feols(AP_std2 ~ DIV + div_exp | AGE + MID, data=.) %>%
+  summary()
+
+```
+### Time Investment
+
+For fathers, this is the regression that recovers the reduction:
+```{r}
+
+K %>%
+  select(KID,tau_f,AGE,DIV) %>%
+  drop_na() %>%
+  group_by(AGE) %>%
+  mutate(gamma_a = mean(tau_f[!DIV])) %>%
+  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.) %>%
+  summary()
+
+K %>%
+  select(MID,KID,tau_f,AGE,DIV) %>%
+  drop_na() %>%
+  group_by(AGE) %>%
+  mutate(gamma_a = mean(tau_f[!DIV])) %>%
+  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.) %>%
+  summary()
+
+
+```
+The same for mothers:
+
+```{r}
+K %>%
+  select(KID,tau_m,AGE,DIV) %>%
+  drop_na() %>%
+  group_by(AGE) %>%
+  mutate(gamma_a = mean(tau_m[!DIV])) %>%
+  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.) %>%
+  summary()
+
+K %>%
+  select(MID,KID,tau_m,AGE,DIV) %>%
+  drop_na() %>%
+  group_by(AGE) %>%
+  mutate(gamma_a = mean(tau_m[!DIV])) %>%
+  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.) %>%
+  summary()
+
+```
+
 
 ## Life-Cycle Moments
 
