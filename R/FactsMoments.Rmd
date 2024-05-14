@@ -196,7 +196,7 @@ g <- rbind(m1,m2) %>%
   ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
 
 ggsave("../output/figures/skill_patterns.png",g,width=6,height=4)
-
+g
 
 ```
 
@@ -221,8 +221,12 @@ m2 <- K %>%
   mutate(case="Using Separation")
 
 
-rbind(m1,m2) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.2)) + geom_errorbar(position = position_dodge(0.2),width=0.) + ggtitle("Average AP score by Marital Status (raw)") + facet_grid(. ~ case)
+g <- rbind(m1,m2) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
+
+ggsave("../output/figures/skill_patterns_separation.png",g,width=6,height=4)
+g
+
 ```
 
 ## Time Investment Patterns
@@ -349,29 +353,30 @@ P %>%
 
 ```{r}
 library(fixest)
+# NOTE: the exposure variable only significant when controlling for age. do we need to clarify or provide interpretation?
 mod1 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
-  feols(AP_std2 ~ SEP + div_exp | AGE + MID, data=.) 
+  feols(AP_std2 ~ SEP + div_exp | MID + AGE, data=.) 
 
 mod2 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSD),10)) %>%
-  feols(AP_std2 ~ DIV + div_exp | AGE + MID, data=.) 
+  feols(AP_std2 ~ DIV + div_exp | MID + AGE, data=.) 
 
 mod3 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
-  feols(AP_std2 ~ SEP + div_exp | AGE + KID, data=.) 
+  feols(AP_std2 ~ SEP + div_exp | KID + AGE, data=.) 
 
 mod4 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSD),10)) %>%
-  feols(AP_std2 ~ DIV + div_exp | AGE + KID, data=.)
+  feols(AP_std2 ~ DIV + div_exp | KID + AGE, data=.)
 
 ```
 

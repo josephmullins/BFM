@@ -41,3 +41,9 @@ g <- d %>%
   theme_minimal() + theme(legend.position="bottom",legend.title = element_blank()) + 
   ylab("Std. Dev of AP test score")
 ggsave("output/figures/modelfit_sd.png",g,width=4,height=3)
+
+d <- read_csv("BFM/output/dissolution.csv")
+
+g <- d %>%
+  ggplot(aes(x=y,y=x)) + geom_point() + facet_grid(. ~ name,scales="free_x") + theme_minimal() + ylab("Change in Divorce Rate (%)") + xlab("")
+ggsave("BFM/output/figures/dissolution.png",g,width=5,height=3.5)
