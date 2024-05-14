@@ -362,44 +362,48 @@ K %>%
 For fathers, this is the regression that recovers the reduction:
 ```{r}
 
-K %>%
+mod1 <- K %>%
   select(KID,tau_f,AGE,DIV) %>%
   drop_na() %>%
   group_by(AGE) %>%
   mutate(gamma_a = mean(tau_f[!DIV])) %>%
-  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.) %>%
-  summary()
+  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.)
 
-K %>%
+mod2 <- K %>%
   select(MID,KID,tau_f,AGE,DIV) %>%
   drop_na() %>%
   group_by(AGE) %>%
   mutate(gamma_a = mean(tau_f[!DIV])) %>%
-  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.) %>%
-  summary()
+  feols(tau_f ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.)
 
 
 ```
 The same for mothers:
 
 ```{r}
-K %>%
+mod3 <- K %>%
   select(KID,tau_m,AGE,DIV) %>%
   drop_na() %>%
   group_by(AGE) %>%
   mutate(gamma_a = mean(tau_m[!DIV])) %>%
-  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.) %>%
-  summary()
+  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | KID,data=.)
 
-K %>%
+mod4 <- K %>%
   select(MID,KID,tau_m,AGE,DIV) %>%
   drop_na() %>%
   group_by(AGE) %>%
   mutate(gamma_a = mean(tau_m[!DIV])) %>%
-  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.) %>%
-  summary()
+  feols(tau_m ~ gamma_a + (gamma_a:as.integer(DIV)) | MID,data=.)
 
 ```
+
+```{r}
+etable(mod1,mod2,mod3,mod4)
+```
+```{r}
+etable(mod1,mod2,mod3,mod4,tex=TRUE)
+```
+
 
 
 ## Life-Cycle Moments

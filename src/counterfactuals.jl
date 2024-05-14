@@ -21,13 +21,8 @@ function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,M,P,K,θk)
     childsupp2 = []
     for b in axes(X1b,2)
         println(b)
-        #x1,x2,x3,x4,_ = stack_ests(θ,θk)
         θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
-        # note: everything looks ok with only x2 and x3 fixed. checking those now.
-        # adding x2 recreates the issue, checking now x3
-        # x3 (fixing x2) also recreates the issue but to a lesser extent. why do these parameters matter so much?
-        #θ,θk = update_all((X1b[:,b],X2b[:,b],x3,X4b[:,b],X5b[:,b]),θ,θk,F);
-        #θ = update_Cτ(θ,F.τgrid,cprobs) #<- try updating Cτ
+
         mod = (;mod...,θ)
         Random.seed!(1010+b)
         Mb,Pb,_ = draw_boot_sample(M,P,K)
@@ -47,6 +42,34 @@ function bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,M,P,K,θk)
         push!(childsupp2,r2)
     end
     return mc,unil,mcust,ptcust,childsupp1,childsupp2
+end
+
+function bootstrap_extra_counterfactuals(X1b,X2b,X3b,X4b,X5b,mod,M,P,K,θk)
+    (;θ,F) = mod
+    (;cprobs) = θ
+    div_standard = []
+    childsupp1 = []
+    childsupp2 = []
+    for b in axes(X1b,2)
+        println(b)
+        θ,θk = update_all((X1b[:,b],X2b[:,b],X3b[:,b],X4b[:,b],X5b[:,b]),θ,θk,F);
+
+        mod = (;mod...,θ)
+        Random.seed!(1010+b)
+        Mb,Pb,_ = draw_boot_sample(M,P,K)
+        dat = prep_sim_data(Mb,Pb;R = 10)
+        sim_data,kid_data = full_simulation(dat,mod,cprobs)
+
+        # run counterfactuals
+        stats_mc,stats_ul = divorce_standard_comparison(dat,mod,θk)
+        r1 = compare_stats(stats_ul,stats_mc,θ.β)
+        push!(div_standard,r1)
+
+        r1,r2 = extended_child_support_counterfactual(dat,mod,θk,stats_mc,stats_ul)
+        push!(childsupp1,r1)
+        push!(childsupp2,r2)
+    end
+    return div_standard,childsupp1,childsupp2
 end
 
 function divorce_standard_counterfactual(dat,mod,θk,stats0)
@@ -69,6 +92,28 @@ function divorce_standard_counterfactual(dat,mod,θk,stats0)
     dat.legal[:] .= l0[:]
 
     return r1,r2
+end
+
+function divorce_standard_comparison(dat,mod,θk)
+    (;θ) = mod
+    (;cprobs, β) = θ
+    l0 = copy(dat.legal)
+    # all mutual consent
+    dat.legal[:] .= 1
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats_mc = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+
+    # all unilateral
+    dat.legal[:] .= 2
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats_ul = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    
+    r = compare_stats(stats_ul,stats_mc,β)
+
+    # reset legal environment
+    dat.legal[:] .= l0[:]
+
+    return stats_mc,stats_ul
 end
 
 function custody_counterfactual(dat,mod,θk,stats0)
@@ -110,6 +155,35 @@ function child_support_counterfactual(dat,mod,θk,stats0)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
     r2 = compare_stats(stats2,stats1,β)
+
+    return r1,r2
+end
+
+function extended_child_support_counterfactual(dat,mod,θk,stats_mc,stats_ul)
+    (;θ, F) = mod
+    (;cprobs, β) = θ
+
+    l0 = copy(dat.legal)
+ 
+    # decrease to 15% when all mutual consent vs all unilateral
+    # all mutual consent
+    dat.legal[:] .= 1
+    F = (;F...,π_H = 0.15)
+    mod = (;mod...,F)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    r1 = compare_stats(stats_mc,stats1,β)
+
+    # all unilateral
+    dat.legal[:] .= 2
+    mod = (;mod...,F)
+    sim_data,kid_data = full_simulation(dat,mod,cprobs)
+    stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
+    r2 = compare_stats(stats_ul,stats2,β)
+
+    # reset legal environment
+    dat.legal[:] .= l0[:]
+
 
     return r1,r2
 end
