@@ -165,6 +165,8 @@ g + ggtitle("Average AP score by Time since Divorce (standardized)")
 ### Comparison Using Separation instead of Divorce
 
 ```{r}
+
+
 m1 <- K %>%
   select(AGE,AP_raw,dgroup) %>%
   drop_na() %>%
@@ -172,6 +174,7 @@ m1 <- K %>%
   group_by(AGE) %>%
   mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
   mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
   group_by(dgroup,age_group) %>%
   summarize(m = mean(AP_raw),se = sd(AP_raw)/sqrt(n())) %>%
   mutate(case="Using Divorce")
@@ -183,15 +186,20 @@ m2 <- K %>%
   group_by(AGE) %>%
   mutate(AP_raw = (AP_raw - mean(AP_raw))/sd(AP_raw)) %>%
   mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
   group_by(dgroup,age_group) %>%
   summarize(m = mean(AP_raw),se = sd(AP_raw)/sqrt(n())) %>%
   mutate(case="Using Separation")
 
 
-rbind(m1,m2) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_line() + geom_point() + geom_errorbar(width=0.) + ggtitle("Average AP score by Marital Status (standardized)") + facet_grid(. ~ case)
+g <- rbind(m1,m2) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
+
+ggsave("../output/figures/skill_patterns.png",g,width=6,height=4)
+
 
 ```
+
 
 ```{r}
 m1 <- K %>%
@@ -341,22 +349,43 @@ P %>%
 
 ```{r}
 library(fixest)
-K %>%
+mod1 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
-  feols(AP_std2 ~ SEP + div_exp | AGE + MID, data=.) %>%
-  summary()
+  feols(AP_std2 ~ SEP + div_exp | AGE + MID, data=.) 
 
-K %>%
+mod2 <- K %>%
   group_by(AGE) %>%
   mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
-  mutate(LW_std2 = (LW_raw - mean(LW_raw,na.rm = TRUE))/sd(LW_raw,na.rm=TRUE)) %>%
+  mutate(div_exp = pmin(pmax(0,TSD),10)) %>%
+  feols(AP_std2 ~ DIV + div_exp | AGE + MID, data=.) 
+
+mod3 <- K %>%
+  group_by(AGE) %>%
+  mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
   mutate(div_exp = pmin(pmax(0,TSS),10)) %>%
-  feols(AP_std2 ~ DIV + div_exp | AGE + MID, data=.) %>%
-  summary()
+  feols(AP_std2 ~ SEP + div_exp | AGE + KID, data=.) 
+
+mod4 <- K %>%
+  group_by(AGE) %>%
+  mutate(AP_std2 = (AP_raw - mean(AP_raw,na.rm = TRUE))/sd(AP_raw,na.rm=TRUE)) %>%
+  mutate(div_exp = pmin(pmax(0,TSD),10)) %>%
+  feols(AP_std2 ~ DIV + div_exp | AGE + KID, data=.)
 
 ```
+
+
+```{r}
+etable(mod1,mod2,mod3,mod4)
+```
+
+```{r}
+etable(mod1,mod2,mod3,mod4,tex = TRUE)
+
+```
+
+
 ### Time Investment
 
 For fathers, this is the regression that recovers the reduction:
@@ -400,6 +429,7 @@ mod4 <- K %>%
 ```{r}
 etable(mod1,mod2,mod3,mod4)
 ```
+
 ```{r}
 etable(mod1,mod2,mod3,mod4,tex=TRUE)
 ```
