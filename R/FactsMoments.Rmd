@@ -299,13 +299,95 @@ m2 <- K %>%
 g <- rbind(m1,m2) %>%
   ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
 
-g + ggtitle("Average AP score by Marital Status (standardized)")
+g + ggtitle("Average Time Investment by Marital Status")
 
 ggsave("../output/figures/time_patterns.png",g,width=5.5,height=4)
 
 
+```
+### Robustness to together vs alone time
+
+```{r}
+# tb = mum_solo + dad_solo + togther
+# mum = mum_solo + together
+# dad = dad_solo + together
+# mum_solo = tb - dad
+# dad_solo = tb - mom
+# together = tb = mom_solo - data_solo
+td <- read.csv("~/Dropbox/PSID_CDS/data-cds/time-diary/ActiveTimePanel.csv") %>%
+  mutate(tau_m_solo = tau_both - tau_f, tau_f_solo = tau_both - tau_m, together = tau_both - tau_m_solo - tau_f_solo) %>%
+  select(KID,year,tau_m_solo,tau_f_solo,together) %>%
+  rename(YEAR = year)
+
+d <- K %>%
+  inner_join(td) %>%
+  select(AGE,tau_m_solo,tau_f_solo,together,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4)))
+
+m1 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_m_solo),se = sd(tau_m_solo)/sqrt(n())) %>%
+  mutate(var="Mother Only")
+
+m2 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_f_solo),se = sd(tau_f_solo)/sqrt(n())) %>%
+  mutate(var="Father Only")
+
+m3 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(together),se = sd(together)/sqrt(n())) %>%
+  mutate(var="Together")
+
+g <- rbind(m1,m2,m3) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
+
+ggsave("../output/figures/time_patterns_joint.png",g,width=6.5,height=4)
+
+g
 
 ```
+Same figure as above but using the "investment" measure from CLMP:
+
+```{r}
+td <- read.csv("~/Dropbox/PSID_CDS/data-cds/time-diary/ActiveTimePanel.csv") %>%
+  mutate(tau_m_solo = tau_both_investment - tau_f_investment, tau_f_solo = tau_both_investment - tau_m_investment, together = tau_both_investment - tau_m_solo - tau_f_solo) %>%
+  select(KID,year,tau_m_solo,tau_f_solo,together) %>%
+  rename(YEAR = year)
+
+d <- K %>%
+  inner_join(td) %>%
+  select(AGE,tau_m_solo,tau_f_solo,together,dgroup) %>%
+  drop_na() %>%
+  mutate(dgroup = factor(dgroup,labels=c("Never Divorced","Divorced","Will Divorce"),levels=c(1,2,3))) %>%
+  mutate(age_group = case_when(AGE<=5 ~ 1,AGE>=14 ~ 4,AGE>=10 ~ 3,AGE>=6 ~ 2)) %>%
+  mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4)))
+
+m1 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_m_solo),se = sd(tau_m_solo)/sqrt(n())) %>%
+  mutate(var="Mother Only")
+
+m2 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(tau_f_solo),se = sd(tau_f_solo)/sqrt(n())) %>%
+  mutate(var="Father Only")
+
+m3 <- d %>%
+  group_by(dgroup,age_group) %>%
+  summarize(m = mean(together),se = sd(together)/sqrt(n())) %>%
+  mutate(var="Together")
+
+g <- rbind(m1,m2,m3) %>%
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
+g
+
+```
+
+
 
 ```{r}
 K %>%
