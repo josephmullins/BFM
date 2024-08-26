@@ -4,7 +4,7 @@ using DelimitedFiles
 
 M = CSV.read("data/MarriageFile.csv",DataFrame,missingstring="NA")
 P = CSV.read("data/MarriagePanel.csv",DataFrame,missingstring="NA")
-K = CSV.read("data/KidPanel.csv",DataFrame,missingstring="NA")
+K = CSV.read("data/KidPanelv2.csv",DataFrame,missingstring="NA")
 cprobs = CSV.read("data/CustodyMomentsSimple.csv",DataFrame).p[:]
 
 F = FixedParams()
