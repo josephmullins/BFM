@@ -144,11 +144,11 @@ function child_support_counterfactual(dat,mod,θk,stats0)
     (;cprobs, β) = θ
  
     # increase child support to 50% (??) 
-    F = (;F...,π_H = 0.15)
+    F = (;F...,π_H = 0.3)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r1 = compare_stats(stats0,stats1,β)
+    r1 = compare_stats(stats1,stats0,β)
 
     F = (;F...,π_H = 0.5)
     mod = (;mod...,F)
