@@ -52,7 +52,7 @@ mcust,ptcust = custody_counterfactual(dat,model,θk,stats_baseline)
 
 
 childsupp1,childsupp2 = child_support_counterfactual(dat,model,θk,stats_baseline)
-
+break
 mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,M,P,K,θk)
 
 # a function for writing everything
