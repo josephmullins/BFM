@@ -1,1 +1,13 @@
 .DS_Store
+data/CPI-U.csv
+data/StateCodesDivorce.csv
+data/data-cds/ActiveTimePanel.csv
+data/data-cds/AssessmentPanel.csv
+data/data-cps/cps_00039.csv
+data/data-psid/Childbirth.csv
+data/data-psid/earnings-panel.csv
+data/data-psid/education.csv
+data/data-psid/identifiers-panel.csv
+data/data-psid/Marriage.csv
+data/data-psid/StateVertical.csv
+data/data-psid/T2clean.csv
