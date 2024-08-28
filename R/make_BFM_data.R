@@ -177,7 +177,7 @@ sample <- panel %>%
 
 
 write_csv(sample,"data/MarriageFile.csv")
-write_csv(panel,"~data/MarriagePanel.csv")
+write_csv(panel,"data/MarriagePanel.csv")
 
 # Now we create a panel of CDS children that belong to this sample of marriages
 
