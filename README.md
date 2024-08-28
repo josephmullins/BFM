@@ -1,8 +1,6 @@
 # Replication code for "Family Law Effects on Divorce, Fertility and Child Investment" by Brown, Flinn and Mullins (2024)
 
-## Introduction
-
-In this repository you will find code to replicate the estimates, figures and tables
+In this repository you will find code to replicate the model estimates, figures and tables from "Family Law Effects on Divorce, Fertility and Child Investment" by Brown, Flinn and Mullins (2024).
 
 ## Initial Data Cleaning
 
@@ -20,6 +18,11 @@ The R notebook [Facts and Moments](`R/FactsMoments.Rmd`) uses the compiled panel
 
 ## Estimation of the Model
 
-The model is estimated in `julia`.
+The model is estimated in `julia`. All source code can be found in `src`, with code to solve the model in `src/model`, code to run estimation in `src/estimation` and code to run counterfactuals in `src/counterfactuals.jl`.
 
-##
+All results found in the paper are generateed by the following scripts:
+
+- The script `scripts/run_estimation.jl` runs all five stages of the estimation routine. Among these, stage 4 is the most computationally burdensome. The code to solve the model (`src/model/solve.jl`) has been written to make use of multiple threads if they are available.
+- The script `scripts/run_bootstrap.jl` samples the data with replacement and re-estimates the model to produce a bootstrap sample of estimates
+- The script `scripts/estimate_tables.jl` produces tables of estimates found in the paper
+- The script `scripts/run_counterfactuals.jl` runs all the counterfactuals found in the paper, including over the bootstrap sample to provide confidence intervals for all calculations.
