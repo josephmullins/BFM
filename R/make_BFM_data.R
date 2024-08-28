@@ -175,7 +175,6 @@ sample <- panel %>%
   merge(sample) %>%
   arrange(MID)
 
-  
 
 write_csv(sample,"data/MarriageFile.csv")
 write_csv(panel,"~data/MarriagePanel.csv")
@@ -187,14 +186,14 @@ write_csv(panel,"~data/MarriagePanel.csv")
 # final kid panel:
 # test score, tau, phi, div, sep, tsd, tss, AGE
 
-TD <- read.csv("data/data-cds/time-diary/ActiveTimePanel.csv") %>%
+TD <- read.csv("data/data-cds/ActiveTimePanel.csv") %>%
   select(KID,year,tau_m,tau_f) %>%
   rename(YEAR=year)
 # make an index of cds kids from the time diary
 cds_index <- TD %>%
   select(KID) %>%
   unique()
-S <- read.csv("data/data-cds/assessments/AssessmentPanel.csv") %>% mutate(X=NULL) %>%
+S <- read.csv("data/data-cds/AssessmentPanel.csv") %>% mutate(X=NULL) %>%
   rename(YEAR=year)
 
 

@@ -12,7 +12,7 @@ K <- read_csv("../data/KidPanelv2.csv")
 
 ```
 
-# Facts and Moments from the Data
+# Facts and Moments from the PSID Data
 
 ## Sample Size
 
@@ -399,3 +399,24 @@ etable(mod1,mod2,mod3,mod4)
 etable(mod1,mod2,mod3,mod4,tex=TRUE)
 ```
 
+## Custody Allocation Moments from the CPS
+
+```{r}
+# read in the data
+library(vroom)
+D <- vroom("../data/data-cps/cps_00038.csv") %>%
+  filter(CSELIG==1,CSYRDIV<9998,CSDAYS<998,CSLEGCUS<98) %>%
+  mutate(coll = EDUC>100,days = case_when(SEX==1 ~ 365-CSDAYS,SEX==2 ~ CSDAYS),legal=CSPHYCUS==2 | CSVISLEG==2) %>%
+  rename(year_div = CSYRDIV) %>%
+  filter(!is.na(days)) %>%
+  mutate(phi = cut(days / 365, 5))
+
+D %>% 
+  group_by(phi) %>% 
+  summarize(count=n()) %>% 
+  ungroup() %>%
+  mutate(p = count/sum(count)) #%>%
+  write.csv("../data/CustodyMomentsSimple.csv")
+
+
+```
