@@ -144,17 +144,17 @@ function child_support_counterfactual(dat,mod,θk,stats0)
     (;cprobs, β) = θ
  
     # increase child support to 50% (??) 
-    F = (;F...,π_H = 0.15)
+    F = (;F...,π_H = 0.3)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r1 = compare_stats(stats0,stats1,β)
+    r1 = compare_stats(stats1,stats0,β)
 
     F = (;F...,π_H = 0.5)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r2 = compare_stats(stats2,stats1,β)
+    r2 = compare_stats(stats2,stats0,β)
 
     return r1,r2
 end
@@ -165,21 +165,21 @@ function extended_child_support_counterfactual(dat,mod,θk,stats_mc,stats_ul)
 
     l0 = copy(dat.legal)
  
-    # decrease to 15% when all mutual consent vs all unilateral
+    # increase to 30% when all mutual consent vs all unilateral
     # all mutual consent
     dat.legal[:] .= 1
-    F = (;F...,π_H = 0.15)
+    F = (;F...,π_H = 0.3)
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats1 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r1 = compare_stats(stats_mc,stats1,β)
+    r1 = compare_stats(stats1,stats_mc,β)
 
     # all unilateral
     dat.legal[:] .= 2
     mod = (;mod...,F)
     sim_data,kid_data = full_simulation(dat,mod,cprobs)
     stats2 = counterfactual_statistics(kid_data,dat,θ,θk,mod)
-    r2 = compare_stats(stats_ul,stats2,β)
+    r2 = compare_stats(stats2,stats_ul,β)
 
     # reset legal environment
     dat.legal[:] .= l0[:]
@@ -373,4 +373,45 @@ function model_stats(mod,dat;seed=1234)
         #println(tF," ",tD)
     end
     return welf_H / N, welf_W / N, log_wage / N, fertility / N, divorce / N
+end
+
+# ----- a function for writing everything to a table ------ #
+
+function write_counterfactuals_table(results,boot,filename)
+    stat_names = ["\\% CEV Husbands","\\% CEV Wives","\$\\Delta\$ Wife log-wage (\$\\times\$ 100)","\$\\Delta\$ Fertility (\\%)","\$\\Delta\$ Divorce (\\%)"]
+    field_names = [:ΔwH,:ΔwW,:Δlogwage,:Δfert,:Δdiv,:Δskill]
+    file = open("output/tables/"*filename,"w")
+
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,field_names[r])
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,field_names[r]) for b in cb],0.05)
+            ub = quantile([getfield(b,field_names[r]) for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    stat_names = ["\$\\Delta\$ Skill (\\% sd)","\\hspace{10pt}\$\\Delta\$ TFP","\\hspace{10pt}\$\\Delta\$ Mother's Time","\\hspace{10pt}\$\\Delta\$ Father's Time"]
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,:Δskill)[r]
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,:Δskill)[r] for b in cb],0.05)
+            ub = quantile([getfield(b,:Δskill)[r] for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    close(file)
 end

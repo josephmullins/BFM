@@ -17,7 +17,7 @@ function FixedParams(;
     A_grid = LinRange(0, 18, 4), # Child age grid
     N_a = length(A_grid), # Length of child age grid
     N_ϵ = 5,  # Length of husband income shock grid
-    π_H = 1/3,# When divorced with a developing child, husband's income is taxed at rate π_H
+    π_H = 0.15,# When divorced with a developing child, husband's income is taxed at rate π_H
     N_ω = 5,   # Length of marriage quality grid
     ω_grid = LinRange(-1,1,N_ω), # Marriage quality grid
     τ_R = 1/2, # Default legal custody arragement
