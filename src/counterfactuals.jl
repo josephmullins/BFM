@@ -374,3 +374,44 @@ function model_stats(mod,dat;seed=1234)
     end
     return welf_H / N, welf_W / N, log_wage / N, fertility / N, divorce / N
 end
+
+# ----- a function for writing everything to a table ------ #
+
+function write_counterfactuals_table(results,boot,filename)
+    stat_names = ["\\% CEV Husbands","\\% CEV Wives","\$\\Delta\$ Wife log-wage (\$\\times\$ 100)","\$\\Delta\$ Fertility (\\%)","\$\\Delta\$ Divorce (\\%)"]
+    field_names = [:ΔwH,:ΔwW,:Δlogwage,:Δfert,:Δdiv,:Δskill]
+    file = open("output/tables/"*filename,"w")
+
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,field_names[r])
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,field_names[r]) for b in cb],0.05)
+            ub = quantile([getfield(b,field_names[r]) for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    stat_names = ["\$\\Delta\$ Skill (\\% sd)","\\hspace{10pt}\$\\Delta\$ TFP","\\hspace{10pt}\$\\Delta\$ Mother's Time","\\hspace{10pt}\$\\Delta\$ Father's Time"]
+    for r in eachindex(stat_names)
+        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
+        for cr in results
+            num = getfield(cr,:Δskill)[r]
+            write(file," & ",form(num))
+        end
+        write(file," \\\\ \n")
+        for cb in boot
+            lb = quantile([getfield(b,:Δskill)[r] for b in cb],0.05)
+            ub = quantile([getfield(b,:Δskill)[r] for b in cb],0.95)
+            write(file," & ",formci((lb,ub)))
+        end
+        write(file," \\\\ \n")
+    end
+
+    close(file)
+end

@@ -35,7 +35,7 @@ X5b = readdlm("output/boot_stage5")
 
 θk = (;θk...,ρ = θ.ρ)
 
-# ----- Simulate Data for model fit
+# ----- Simulate Data  for baseline
 dat = prep_sim_data(M,P;R = 10)
 model = (;θ,values=V,F)
 solve_all!(model)
@@ -45,172 +45,37 @@ kid_data = prep_child_data(sim_data,dat,cprobs);
 # get baseline stats
 stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,model)
 
+# get outcomes under mutual consent and unilateral / no-fault divorce
 mc,unil = divorce_standard_counterfactual(dat,model,θk,stats_baseline)
-# do we have to reset the divorce standard after this? I think so.
 
+# get outcomes for full-time maternal custody and part-time
 mcust,ptcust = custody_counterfactual(dat,model,θk,stats_baseline)
 
-
+# get outoutcomes for π=0.3 and π=0.5
 childsupp1,childsupp2 = child_support_counterfactual(dat,model,θk,stats_baseline)
-break
 mc_boot,unil_boot,mcust_boot,pcust_boot,cs1_boot,cs2_boot = bootstrap_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,M,P,K,θk)
 
-# a function for writing everything
-
-
-function write_counterfactuals_table(results,boot,filename)
-    stat_names = ["\\% CEV Husbands","\\% CEV Wives","\$\\Delta\$ Wife log-wage (\$\\times\$ 100)","\$\\Delta\$ Fertility (\\%)","\$\\Delta\$ Divorce (\\%)"]
-    field_names = [:ΔwH,:ΔwW,:Δlogwage,:Δfert,:Δdiv,:Δskill]
-    file = open("output/tables/"*filename,"w")
-
-    for r in eachindex(stat_names)
-        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
-        for cr in results
-            num = getfield(cr,field_names[r])
-            write(file," & ",form(num))
-        end
-        write(file," \\\\ \n")
-        for cb in boot
-            lb = quantile([getfield(b,field_names[r]) for b in cb],0.05)
-            ub = quantile([getfield(b,field_names[r]) for b in cb],0.95)
-            write(file," & ",formci((lb,ub)))
-        end
-        write(file," \\\\ \n")
-    end
-
-    stat_names = ["\$\\Delta\$ Skill (\\% sd)","\\hspace{10pt}\$\\Delta\$ TFP","\\hspace{10pt}\$\\Delta\$ Mother's Time","\\hspace{10pt}\$\\Delta\$ Father's Time"]
-    for r in eachindex(stat_names)
-        write(file,stat_names[r]) #form(d[r])," & ",formci(dse[r])," \\\\ \n")
-        for cr in results
-            num = getfield(cr,:Δskill)[r]
-            write(file," & ",form(num))
-        end
-        write(file," \\\\ \n")
-        for cb in boot
-            lb = quantile([getfield(b,:Δskill)[r] for b in cb],0.05)
-            ub = quantile([getfield(b,:Δskill)[r] for b in cb],0.95)
-            write(file," & ",formci((lb,ub)))
-        end
-        write(file," \\\\ \n")
-    end
-
-    close(file)
-end
-
+# write these results to a table
 write_counterfactuals_table((mc,unil),(mc_boot,unil_boot),"divorce_standard.tex")
 write_counterfactuals_table((mcust,ptcust),(mcust_boot,pcust_boot),"custody_standard.tex")
 write_counterfactuals_table((childsupp1,childsupp2),(cs1_boot,cs2_boot),"child_support.tex")
 
-break
+# now get outcomes when everyone is mututal consent and unilateral
+stats_mc,stats_ul = divorce_standard_comparison(dat,model,θk)
+div_standard = compare_stats(stats_ul,stats_mc,θ.β)
 
-θ,θk = update_all((x1,x2,x3,x4,x5),θ,θk,F);
-mod = (;mod...,θ);
-sim_data,kid_data = full_simulation(dat,mod,cprobs);
-stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod);
+# Now re-run the π=0.3 counterfactual under both regimes
+childsupp1,childsupp2 = extended_child_support_counterfactual(dat,model,θk,stats_mc,stats_ul)
 
-# run counterfactuals
-r1,r2 = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
+ds_boot,cs1_boot,cs2_boot = bootstrap_extra_counterfactuals(X1b,X2b,X3b,X4b,X5b,model,M,P,K,θk)
 
-θ,θk = update_all((x1,x2,x3,x4,X5b[:,1]),θ,θk,F);
-mod = (;mod...,θ);
-sim_data,kid_data = full_simulation(dat,mod,cprobs);
-stats_baseline = counterfactual_statistics(kid_data,dat,θ,θk,mod);
+# write these results to a table as well
+write_counterfactuals_table((div_standard,),(ds_boot,),"divorce_standard_comparison.tex")
+write_counterfactuals_table((childsupp1,childsupp2),(cs1_boot,cs2_boot),"extended_child_support.tex")
 
-# run counterfactuals
-r1b,r2b = divorce_standard_counterfactual(dat,mod,θk,stats_baseline)
-
-
-break
-using StatsPlots
-
-# shows divorce policy, unlikely for couples without kids
-@chain dsim begin
-    @subset :AK.<18
-    @transform :kids = :AK.>=0
-    groupby([:kids,:omega])
-    @combine :pD = mean(:pD)
-    #@transform :eW = Int64.(:eW)
-    @df plot(:omega,:pD,group=:kids)#,color = :kids)
-end
-
-# divorce probability with experience
-@chain dsim begin
-    @subset :AK.<18
-    @transform :kids = :AK.>=0
-    groupby([:kids,:exp])
-    @combine :pD = mean(:pD)
-    #@transform :eW = Int64.(:eW)
-    @df plot(:exp,:pD,group=:kids)#,color = :kids)
-end
-
-# divorce probability with age (shows that all action without kids is to do with age)
-@chain dsim begin
-    @subset :AK.<18 :AW.<50
-    @transform :kids = :AK.>=0
-    groupby([:kids,:AW])
-    @combine :pD = mean(:pD)
-    #@transform :eW = Int64.(:eW)
-    @df plot(:AW,:pD,group=:kids)#,color = :kids)
-end
-
-
-@chain dsim begin
-    @subset :AK.<0 :AW.<35 #:pD.>0.1
-    #@combine :m = maximum(:pD)
-end
-
-
-@chain dsim begin
-    groupby([:eW,:omega])
-    @combine :FT = mean(:FT)
-    @transform :eW = Int64.(:eW)
-    @df plot(:omega,:FT,group=:eW,color = :eW)
-end
-
-@chain dsim begin
-    @subset :AK.<18
-    @transform :kids = :AK.>=0
-    groupby([:kids,:omega])
-    @combine :FT = mean(:FT)
-    #@transform :eW = Int64.(:eW)
-    @df plot(:omega,:FT,group=:kids)#,color = :kids)
-end
-
-
-
-# shows an increase in labor supply approach divorce
-@chain dsim begin
-    @subset :tsd.>-5 :tsd.<5
-    groupby([:eW,:tsd])
-    @combine :FT = mean(:FT)
-    @transform :eW = Int64.(:eW)
-    @df plot(:tsd,:FT,group=:eW,color = :eW)
-end
-
-# same figure by fertility status instead of education
-@chain dsim begin
-    @transform :kids = :AK.>=0
-    @subset :tsd.>-5 :tsd.<5
-    groupby([:kids,:tsd])
-    @combine :FT = mean(:FT)
-    #@transform :eW = Int64.(:eW)
-    @df plot(:tsd,:FT,group=:kids)#,color = :kids)
-end
-
-
-# shows a child penalty in full-time work
-@chain dsim begin
-    @subset :tsf.>-8 :tsf.<10
-    groupby([:eW,:tsf])
-    @combine :FT = mean(:FT)
-    @transform :eW = Int64.(:eW)
-    @df plot(:tsf,:FT,group=:eW,color = :eW)
-end
-
-@chain dsim begin
-    @subset :tsf.>-8 :tsf.<10
-    groupby([:eW,:eH,:tsf])
-    @combine :FT = mean(:FT)
-    @transform :eW = Int64.((:eW .- 1)*2 .+ :eH)
-    @df plot(:tsf,:FT,group=:eW)# ,color = :eW)
-end
+# save simulation results for figures in the paper
+div = [b.Δdiv for b in ds_boot]
+fert = [b.Δfert for b in ds_boot]
+d = [DataFrame(x = div, y = fert, name = "Change in Fertility Rate (%)") ;
+    DataFrame(x = div, y = X4b[11,:], name = "Dispersion of Marriage Taste Shocks")]
+CSV.write("output/dissolution.csv",d)

@@ -139,7 +139,3 @@ dse = bootstrap_skilldecomp((X1b,X2b,X3b,X4b,X5b),mod,θk)
 
 ci = [(quantile(dse[s,:],0.05),quantile(dse[s,:],0.95)) for s in axes(dse,1)]
 write_decomposition(d,ci)
-
-# calculate outcomes for bilateral vs unilateral (easy, just through L)
-
-# calculate outcomes for child support
