@@ -79,7 +79,7 @@ g <- M %>%
   group_by(AgeDiv) %>%
   summarise(frac = n() / N, se = sqrt(frac*(1-frac)/n())) %>%
   ggplot(aes(x=AgeDiv,y=frac,ymin=frac-1.96*se,ymax=frac+1.96*se)) + geom_point() + geom_errorbar(width=0.2) + geom_line() + theme_minimal() + ylab("Fraction") + xlab("Age of Oldest Child at Divorce")
-ggsave("../output/figures/age_divorce.png",g,width=4,height=3)
+ggsave("../output/figures/age_divorce.eps",g,width=4,height=3)
 g
 ```
 
@@ -121,10 +121,10 @@ g <- K %>%
   mutate(age_group = factor(age_group,labels=c("0-5","6-9","10-13","14+"),levels=c(1,2,3,4))) %>%
   group_by(dgroup,age_group) %>%
   summarize(m = mean(AP_raw),se = sd(AP_raw)/sqrt(n())) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank())
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup,shape=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank())
 
 g + ggtitle("Average AP score by Marital Status (raw)")
-ggsave("../output/figures/skill_patterns.png",g,width=5,height=4)
+ggsave("../output/figures/skill_patterns.eps",g,width=5,height=4)
 
 
 ```
@@ -195,7 +195,6 @@ m2 <- K %>%
 g <- rbind(m1,m2) %>%
   ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
 
-ggsave("../output/figures/skill_patterns.png",g,width=6,height=4)
 g
 
 ```
@@ -222,9 +221,9 @@ m2 <- K %>%
 
 
 g <- rbind(m1,m2) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup,shape=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + theme_minimal() + xlab("Age Group") + ylab("Average Raw AP Score") + theme(legend.position = "bottom",legend.title = element_blank()) + facet_grid(. ~ case)
 
-ggsave("../output/figures/skill_patterns_separation.png",g,width=6,height=4)
+ggsave("../output/figures/skill_patterns_separation.eps",g,width=6,height=4)
 g
 
 ```
@@ -297,11 +296,11 @@ m2 <- K %>%
 
   
 g <- rbind(m1,m2) %>%
-  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
+  ggplot(aes(x=age_group,y=m,ymin=m-1.96*se,ymax=m+1.96*se,color=dgroup,shape=dgroup)) + geom_point(position = position_dodge(0.5)) + geom_errorbar(position=position_dodge(0.5),width=0.3) + facet_grid(. ~ var) + theme_minimal() + xlab("Age") + ylab("Hours / week") + theme(legend.position = "bottom",legend.title = element_blank())
 
 g + ggtitle("Average Time Investment by Marital Status")
 
-ggsave("../output/figures/time_patterns.png",g,width=5.5,height=4)
+ggsave("../output/figures/time_patterns.eps",g,width=5.5,height=4)
 
 
 ```
